@@ -6,3 +6,4 @@
 ffmpeg/*
 __pycache__/*
 samples/*
+.ipynb_checkpoints/*
