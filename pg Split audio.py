@@ -60,7 +60,14 @@ plt.plot(audio)
 #endregion
 
 
-#In[]
+#In[]:
+groups = []
+start=0
+for z in range(len(x)):
+    if not x[z]==x[z-1]:
+        groups.append([start,int(z*hop_length), x[z-1]])
+        start= z*hop_length
+        
 
 
 # In[177]:
