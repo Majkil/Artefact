@@ -24,9 +24,9 @@ single_word = "./samples/but bowl.wav"
 
 # In[3]:
 sr = 8000
-hop_length = int(sr/200)
+hop_length = int(sr/1000)
 covariance_type="spherical"
-samples = 4000
+samples = 2000
 clips = fcs.get_audio_files(libri_train)
 
 print("sr: ",sr,"   hop_length: ",hop_length,"  covariance_type:",covariance_type)
@@ -34,7 +34,7 @@ print("sr: ",sr,"   hop_length: ",hop_length,"  covariance_type:",covariance_typ
 def normalize(x, axis=0):
     return sklearn.preprocessing.minmax_scale(x, axis=axis)
 
-EM = GaussianMixture(n_components=3, covariance_type=covariance_type)
+EM = GaussianMixture(n_components=2, covariance_type=covariance_type)
 counter = 0
 for x in clips[0:samples]:
     print(counter, x)
@@ -42,7 +42,7 @@ for x in clips[0:samples]:
     s = gmm_features(clip,sr,hop_length)
     EM.fit(s)
     counter += 1
-filename = f"EM_samples-{samples}_covar-{covariance_type}_hopLength-{hop_length}_sr-{sr}.joblib"
+filename = f"EM2c_samples-{samples}_covar-{covariance_type}_hopLength-{hop_length}_sr-{sr}.joblib"
 
 #dump(EM, 'EM_samples2k_covar-spherical_hopLength-60_sr-12k.joblib')
 dump(EM,filename)

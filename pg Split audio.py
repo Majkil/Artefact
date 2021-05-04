@@ -19,16 +19,23 @@ lvpath = "E:\Datasets\Voice\Librivox\dev\LibriSpeech\dev-clean"
 libri_train = "E:\Datasets\Voice\LibriSpeech"
 mcvpath = "E:\Datasets\Voice\Mozilla Common Voice\en\cv-corpus-6.1-2020-12-11\en"
 single_word = "./samples/but bowl.wav"
-
+model1 ="EM_samples2k_covar-spherical_hopLength-60_sr-12k.joblib"
+model2 ="EM_samples-1000_covar-spherical_hopLength-50_sr-10000.joblib"
+model3 ="EM_samples-2000_covar-spherical_hopLength-20_sr-8000.joblib"
+model4 ="EM_samples-2000_covar-spherical_hopLength-80_sr-8000.joblib"
+model5 ="EM_samples-2000_covar-spherical_hopLength-80_sr-16000.joblib"
+model6 ="EM_samples-4000_covar-spherical_hopLength-40_sr-8000.joblib"
+model7 ="EM_samples-2000_covar-spherical_hopLength-16_sr-16000.joblib"
+model8="EM2c_samples-2000_covar-spherical_hopLength-8_sr-8000.joblib"
 # endregion
 
 # In[3]:
 
 clips = fcs.get_audio_files(libri_train)
 clip = clips[6701]
-EM = load('EM_samples-4000_covar-spherical_hopLength-40_sr-8000.joblib')
-sr = 10000
-hop_length = int(sr/200)
+EM = load(model7)
+sr = 16000
+hop_length = int(sr/1000)
 audio = librosa.load(clip, sr=sr)[0]
 
 # In[3]:
@@ -38,7 +45,7 @@ def normalize(x, axis=0):
 #region Test
 
 # In[1]:
-three = gmm_features(clip,sr,hop_length)
+three = gmm_features(audio,sr,hop_length)
 print(three)
 print(three.shape)
 
@@ -66,7 +73,7 @@ start=0
 for z in range(len(x)):
     if not x[z]==x[z-1]:
         groups.append([start,int(z*hop_length), x[z-1]])
-        start= z*hop_length
+        start= (z*hop_length)+1
         
 
 
