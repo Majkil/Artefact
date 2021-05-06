@@ -1,6 +1,34 @@
 from utilities import *
 
 
+def Split(audio, hop_length, frame_length, min_duration=10):
+    f = librosa.feature.rms(audio, hop_length=hop_length,
+                            frame_length=frame_length).flatten()
+    rmse_diff = np.zeros_like(f)
+    rmse_diff[1:] = np.diff(f)
+    start, end = 0, 0
+    voiced = []
+    n = normalize(f)
+    t = 0.02
+    for x in range(len(n)):
+        if n[x] > t:
+            if start == 0:
+                start = x
+            if start != 0 and x < len(n):
+                if n[x+1] < t and start != x:
+                    end = x
+                    voiced.append([start, end])
+                    start, end = 0, 0
+
+    trimmed = []
+    for x in voiced:
+        diff = x[1]-x[0]
+        if diff >= min_duration:
+            trimmed.append(x)
+
+    return trimmed
+
+
 def energies(audio, hop_length, frame_length):
 
     energy = normalize(librosa.feature.rms(
@@ -38,7 +66,7 @@ def split_by_energy(audio, hop_length, frame_length):
     # red de2
     for x in range(frames):
         if scaled_audio[x] > (mean+0.01) or scaled_audio[x] < (mean-0.01):
-            
+
             if s_d_energy[x] < 0.8:
                 out.append(x)
     return out
