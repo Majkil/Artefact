@@ -1,11 +1,20 @@
 from utilities import *
 import math
 
+##
+# @brief Returns voiced sections depending on set energy theshold
+#
+# Keyword argument:
+# @param audio -- librosa audio sequence
+# @param hop_length -- hop length in frames
+# @param sr -- audio sampling rate
+# @param min_duration -- minimum section duration in milli seconds
+# @param energy_threshold -- minimum energy to be considered non silent in percentage
 
-def Split(audio, hop_length, frame_length, min_duration=10, energy_threshold=0.05):
-    f = librosa.feature.rms(audio, hop_length=hop_length,
-                            frame_length=frame_length).flatten()
 
+def Split(audio, hop_length, frame_length, sr, min_duration=10,  energy_threshold=0.05):
+    min_duration = (sr/1000)*min_duration
+    f = librosa.feature.rms(audio, hop_length=hop_length,frame_length=frame_length)[0]
     start, end = 0, 0
     voiced = []
     n = normalize(f)
@@ -20,15 +29,19 @@ def Split(audio, hop_length, frame_length, min_duration=10, energy_threshold=0.0
                     start, end = 0, 0
 
     trimmed = []
+
     for x in voiced:
         diff = x[1]-x[0]
-        if diff >= min_duration:
-            trimmed.append(x)
+        if diff*hop_length >= min_duration:
+            trimmed.append([x[0]*hop_length,x[1]*hop_length])
 
     return trimmed
 
 
 def Split2(audio, hop_length, frame_length, sr,  min_duration=700):
+
+    if len(audio) <= 2*min_duration:
+        return [[0, len(audio)]]
     e = librosa.pcen(audio, sr=sr)
     d = librosa.feature.delta(e)
     start, end = 0, 0
@@ -42,13 +55,22 @@ def Split2(audio, hop_length, frame_length, sr,  min_duration=700):
     # take lowest dy as turning point1
     # take next value close to boundary value as closing value
     for c in range(len(d)):
-        if d[c]<d[c-1] and d[c]< d[c+1] and boundaries[-1]+min_duration <= c:
-            boundaries.append(c) 
+        if d[c] < d[c-1] and d[c] < d[c-2] and d[c] < d[c+1] and d[c] < d[c+2] and boundaries[-1]+min_duration <= c:
+            boundaries.append(c)
     x = []
-    if  len(d) - boundaries[-1]<min_duration:
+    if len(d) - boundaries[-1] < min_duration:
         boundaries[-1] = len(d)
-    if boundaries[-1] == boundaries[-2]:
+    else:
+        boundaries.append(len(d))
+    if len(boundaries)>1 and boundaries[-1] == boundaries[-2]:
         boundaries.pop()
+    
+    segments = []
+    for b in range(len(boundaries)):
+        if b < len(boundaries)-1:
+            segments.append([boundaries[b],boundaries[b+1]])
+    return segments
+
     # gradients = []
     # for y in range(len(d)):
     #     if y < len(d)-1:
@@ -66,14 +88,6 @@ def Split2(audio, hop_length, frame_length, sr,  min_duration=700):
     #             boundaries.append(i)
     #             highest_gradien = 0
     return boundaries
-
-
-def energies(audio, hop_length, frame_length):
-
-    energy = normalize(librosa.feature.rms(
-        audio, frame_length=frame_length, hop_length=hop_length)[0])
-    delta = librosa.feature.delta(energy)
-    return librosa.util.stack([energy, delta], axis=1)
 
 
 def split_by_energy(audio, hop_length, frame_length):
