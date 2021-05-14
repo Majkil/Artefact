@@ -21,7 +21,7 @@ sr = 16000
 hop_length = int(sr/200)
 frame_length = int(hop_length*2)
 clips = fcs.get_audio_files(libri_train)
-clip = clips[2402]
+clip = clips[11]
 audio, sr = librosa.load(clip, sr=sr)
 print(clip)
 print(GetTranscription.get_file_transcript(clip))
@@ -55,4 +55,27 @@ for segment in segments:
         all_bits.append(b)
     #print(segment, "   ",segment_boundaries)
 print(all_bits)
+# %%
+transcription = GetTranscription.get_file_transcript(clip)
+from m_dictionary import *
+sectionphones = get_phonemes_for_sentence(sentence = transcription)
+phone_array = []
+for word in sectionphones:
+    for char in word[0]:
+        if char != "ˈ" and char != '\u200d' and char != "/" and char != " " and char != ",":
+            if char =='ː':
+                phone_array[-1] = phone_array[-1]+char
+            else:
+                phone_array.append(char)
+print(phone_array)
+print(transcription)
+print(sectionphones)
+len(phone_array)
+
+#%%
+for word in sectionphones:
+    if len(word) == word.count(' '):
+        print(len(word))
+        print(word)
+        continue
 # %%

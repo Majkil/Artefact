@@ -6,6 +6,7 @@ import re
 es = Elasticsearch()
 index = "ipa_dict"
 
+
 def get_phonemes_for_word(query_string):
     doc = {
         "query": {
@@ -16,9 +17,12 @@ def get_phonemes_for_word(query_string):
     }
     resp = es.search(index=index, body=doc)
     if resp["hits"]["hits"]:
-        return resp["hits"]["hits"][0]["_source"]["phones"]
+        phone_array = resp["hits"]["hits"][0]["_source"]["phones"][0].split(',')[0]
+        phone_array = phone_array.replace('\u200d','').replace("/",'').replace("ˈ",'')
+        return phone_array
     else:
         return " "
+
 
 def get_phonemes_for_sentence(sentence):
     words = sentence.split(' ')
@@ -28,6 +32,7 @@ def get_phonemes_for_sentence(sentence):
     return phones
 
 # print( get_phonemes_for_sentence('WATCH THE SAVAGES OUTSIDE SAID ROBERT'))
+
 
 def MatchPhonesToText(query_string):
     # query_string = "ɐbˈɒlɪʃɪ"
