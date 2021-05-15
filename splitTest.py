@@ -10,18 +10,22 @@ import sklearn
 from sklearn.mixture import GaussianMixture
 import fastaudio.core.signal as fcs
 import GetTranscription
-
+from preprocessing import *
 lvpath = "E:\Datasets\Voice\Librivox\dev\LibriSpeech\dev-clean"
 libri_train = "E:\Datasets\Voice\LibriSpeech"
 mcvpath = "E:\Datasets\Voice\Mozilla Common Voice\en\cv-corpus-6.1-2020-12-11\en"
 single_word = "./samples/but bowl.wav"
 
-clips = fcs.get_audio_files(libri_train)
+clips =fcs.get_audio_files(libri_train)
+len(clips)
 sr = 16000
 hop_length = int(sr/200)
 frame_length = int(hop_length*2)
-clips = fcs.get_audio_files(libri_train)
-clip = clips[11]
+min_duration=hop_length*10
+min_voiced_duration_ms = 50 
+energy_threshold = 0.05
+
+clip = clips[22]
 audio, sr = librosa.load(clip, sr=sr)
 print(clip)
 print(GetTranscription.get_file_transcript(clip))
@@ -44,7 +48,7 @@ print(len(segments))
 all_bits = []
 for segment in segments:
     starting = segment[0]
-    segment_boundaries = Split2(audio[starting:segment[1]], hop_length=hop_length, frame_length=frame_length, sr= sr, min_duration=hop_length*10)
+    segment_boundaries = Split2(audio[starting:segment[1]], hop_length=hop_length, frame_length=frame_length, sr= sr, min_duration=500)
     for bit in segment_boundaries:
         #print((segment[0]+bit[0]), (segment[0]+bit[1]) )
         x1 =starting+bit[0]
@@ -78,4 +82,19 @@ for word in sectionphones:
         print(len(word))
         print(word)
         continue
+# %%
+clip_address = clips[22]
+transcription = load_clip_transcription(clip_address)
+phonemes_in_clip_transcription = all_phones_to_array(transcription)
+if 'XXXXXX' not in phonemes_in_clip_transcription:
+    #print(counter , clip_address)
+    # not all words are in the dictionary 
+    audio = load_clip(clip_address, sr)
+    segments = split_into_segments(audio,hop_length, frame_length, sr, min_voiced_duration_ms, energy_threshold)
+    ##clip_from_segments(segments)
+    phoneme_sections = all_phoneme_Sections_in_clip(audio, segments, sr, frame_length, hop_length, min_duration)
+    print(len(phoneme_sections))
+    print(len(phonemes_in_clip_transcription))
+
+
 # %%

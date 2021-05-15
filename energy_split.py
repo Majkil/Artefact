@@ -22,7 +22,8 @@ def Split(audio, hop_length, frame_length, sr, min_duration=10,  energy_threshol
         if n[x] > energy_threshold:
             if start == 0:
                 start = x
-            if start != 0 and x < len(n):
+                #print(x , len(n))
+            if start != 0 and x < len(n)-2:
                 if n[x+1] < energy_threshold and start != x:
                     end = x
                     voiced.append([start, end])
