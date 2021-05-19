@@ -17,8 +17,10 @@ def get_phonemes_for_word(query_string):
     }
     resp = es.search(index=index, body=doc)
     if resp["hits"]["hits"]:
-        phone_array = resp["hits"]["hits"][0]["_source"]["phones"][0].split(',')[0]
-        phone_array = phone_array.replace('\u200d','').replace("/",'').replace("ˈ",'')
+        phone_array = resp["hits"]["hits"][0]["_source"]["phones"][0].split(',')[
+            0]
+        phone_array = phone_array.replace(
+            '\u200d', '').replace("/", '').replace("ˈ", '')
         return phone_array
     else:
         return " "
@@ -56,6 +58,20 @@ def MatchPhonesToText(query_string):
                         }
                     }
                 ]
+            }
+        }
+    }
+    doc = {
+        "query": {
+            "fuzzy": {
+                "phones": {
+                    "value": query_string,
+                    "fuzziness": "AUTO",
+                    "max_expansions": 50,
+                    "prefix_length": 0,
+                    "transpositions": True,
+                    "rewrite": "constant_score"
+                }
             }
         }
     }

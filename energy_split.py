@@ -35,7 +35,8 @@ def Split(audio, hop_length, frame_length, sr, min_duration=10,  energy_threshol
         diff = x[1]-x[0]
         if diff*hop_length >= min_duration:
             trimmed.append([x[0]*hop_length,x[1]*hop_length])
-
+    if len(trimmed)==0:
+        trimmed = [[0,len(audio)]]
     return trimmed
 
 
@@ -43,7 +44,8 @@ def Split2(audio, hop_length, frame_length, sr,  min_duration=700):
 
     if len(audio) <= 2*min_duration:
         return [[0, len(audio)]]
-    e = librosa.pcen(audio, sr=sr)
+    #audio = librosa.load(audio,sr=sr)
+    e = librosa.pcen(np.abs(audio), sr=sr, hop_length=hop_length)
     d = librosa.feature.delta(e)
     start, end = 0, 0
     boundaries = []

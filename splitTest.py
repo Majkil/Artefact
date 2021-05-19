@@ -75,6 +75,9 @@ print(phone_array)
 print(transcription)
 print(sectionphones)
 len(phone_array)
+#%%
+test = "ɐbɒlɪʃɪ"
+MatchPhonesToText(test)
 
 #%%
 for word in sectionphones:
@@ -86,6 +89,7 @@ for word in sectionphones:
 clip_address = clips[22]
 transcription = load_clip_transcription(clip_address)
 phonemes_in_clip_transcription = all_phones_to_array(transcription)
+#%%
 if 'XXXXXX' not in phonemes_in_clip_transcription:
     #print(counter , clip_address)
     # not all words are in the dictionary 
@@ -98,3 +102,4 @@ if 'XXXXXX' not in phonemes_in_clip_transcription:
 
 
 # %%
+pp = process_clip(clip_address, len(phonemes_in_clip_transcription))

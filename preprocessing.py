@@ -37,12 +37,12 @@ def all_phones_to_array(transcription):
     return phone_array
 
 
-def all_phoneme_Sections_in_clip(audio, segments, sr, frame_length, hop_length, min_duration):
+def all_phoneme_Sections_in_clip(audio, segments, sr, frame_length, hop_length, min_duration=700):
     all_bits = []
     for segment in segments:
         starting = segment[0]
         segment_boundaries = Split2(audio[starting:segment[1]], hop_length=hop_length,
-                                    frame_length=frame_length, sr=sr, min_duration=hop_length*10)
+                                    frame_length=frame_length, sr=sr, min_duration=min_duration)
         for bit in segment_boundaries:
             x1 = starting+bit[0]
             x2 = starting+bit[1]
@@ -59,3 +59,42 @@ def clip_from_segments(audio, segments):
     voiced = np.array(voiced)
     print(voiced.shape)
     return voiced
+
+def process_clip(audio_path, expected_phonemes):
+    sr = 16000    
+    hl = int(sr/100)
+    fl = hl*2
+
+    audio = load_clip(audio_path,sr )
+    segments = split_into_segments(audio,hl,fl,sr )
+    phoneme_bits = all_phoneme_Sections_in_clip(audio,segments,sr=sr,frame_length=fl,hop_length= hl, min_duration=hl*5)
+    counter = 1
+    threshold = 0.05
+
+    while len(phoneme_bits) != expected_phonemes and counter <=12:
+        #hl = int(sr/100)*counter
+        
+        sr += 1000
+        audio = load_clip(audio_path,sr)
+        if len(phoneme_bits) > expected_phonemes:
+            threshold += 0.01
+            if hl >int(sr/100):
+                hl = int(sr/50)
+            elif hl > int(sr/200):
+                hl = int(sr/100)
+            elif hl > int(sr/250):
+                hl = int(sr/200)
+        else:
+            threshold -= 0.01
+            if hl <int(sr/100):
+                hl = int(sr/200)
+            elif hl < int(sr/200):
+                hl = int(sr/250)
+        fl = hl*2
+        segments = split_into_segments(audio, hl,fl,sr,energy_threshold=threshold)
+        phoneme_bits = all_phoneme_Sections_in_clip(audio,segments,sr,fl,hl, )
+        counter +=1
+    if len(phoneme_bits) == expected_phonemes:
+        return phoneme_bits ,sr
+    else:
+        return [], sr
