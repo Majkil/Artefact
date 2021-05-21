@@ -8,3 +8,4 @@ __pycache__/*
 samples/*
 .ipynb_checkpoints/*
 *.joblib
+*.npy

@@ -1,8 +1,11 @@
 # In[2]:
 from re import X
 from sklearn import preprocessing
+from tensorflow.keras import activations
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 import tensorflow as tf
+import tensorflow.keras as tfk
+import tensorflow.keras.layers as tfkl
 from sklearn.preprocessing import normalize
 from sklearn.model_selection import train_test_split
 from utilities import *
@@ -29,9 +32,7 @@ min_duration = hop_length*10
 min_voiced_duration_ms = 50
 energy_threshold = 0.05
 
-# In[4]:
-
-
+#%%
 def padding(array, xx, yy):
     """
     :param array: numpy array
@@ -65,7 +66,7 @@ for x in exact:
 unique_phones = np.unique(labels_all).tolist()
 
 # In[9]:
-features_count = 128
+features_count = 20
 series_length = 160
 features = []
 labels = []
@@ -78,7 +79,7 @@ hl_4ms = int(sr/250)
 # %% 
 # 0 to 12386 no scanning
 # 12386  to 14008 with scanning
-for x in known_clips:
+for x in known_clips[6727:-1]:
     # x =exact[0]
     transcription = load_clip_transcription(x)
     phonemes = all_phones_to_array(transcription)
@@ -87,30 +88,30 @@ for x in known_clips:
     audio = load_clip(x, sr)
     
     # 4m hoplength 3% energy
-    if len(phonemes) > len(phoneme_sections):
-        segments = split_into_segments(
-            audio, hl_4ms, frame_length, sr, min_voiced_duration_ms, energy_threshold=0.06)
-        phoneme_sections = all_phoneme_Sections_in_clip(
-            audio, segments, sr, frame_length, hl_4ms, min_duration)
-    # 10ms hoplength 3% energy
-    if len(phonemes) < len(phoneme_sections):
-        segments = split_into_segments(
-            audio, hl_10ms, frame_length=hl_10ms*2, sr=sr, min_voiced_duration_ms=min_voiced_duration_ms,  energy_threshold=0.03)
-        phoneme_sections = all_phoneme_Sections_in_clip(
-            audio, segments, sr=sr, frame_length=hl_10ms*2, hop_length=hl_10ms, min_duration=min_duration)
-    if len(phonemes) != len(phoneme_sections):
-        segments = split_into_segments(
-            audio, hl_10ms, frame_length=hl_10ms*3, sr=sr, min_voiced_duration_ms=min_voiced_duration_ms,  energy_threshold=0.04)
-        phoneme_sections = all_phoneme_Sections_in_clip(
-            audio, segments, sr=sr, frame_length=hl_10ms*3, hop_length=hl_10ms, min_duration=min_duration)
+    # if len(phonemes) > len(phoneme_sections):
+    #     segments = split_into_segments(
+    #         audio, hl_4ms, frame_length, sr, min_voiced_duration_ms, energy_threshold=0.06)
+    #     phoneme_sections = all_phoneme_Sections_in_clip(
+    #         audio, segments, sr, frame_length, hl_4ms, min_duration)
+    # # 10ms hoplength 3% energy
+    # if len(phonemes) < len(phoneme_sections):
+    #     segments = split_into_segments(
+    #         audio, hl_10ms, frame_length=hl_10ms*2, sr=sr, min_voiced_duration_ms=min_voiced_duration_ms,  energy_threshold=0.03)
+    #     phoneme_sections = all_phoneme_Sections_in_clip(
+    #         audio, segments, sr=sr, frame_length=hl_10ms*2, hop_length=hl_10ms, min_duration=min_duration)
+    # if len(phonemes) != len(phoneme_sections):
+    #     segments = split_into_segments(
+    #         audio, hl_10ms, frame_length=hl_10ms*3, sr=sr, min_voiced_duration_ms=min_voiced_duration_ms,  energy_threshold=0.04)
+    #     phoneme_sections = all_phoneme_Sections_in_clip(
+    #         audio, segments, sr=sr, frame_length=hl_10ms*3, hop_length=hl_10ms, min_duration=min_duration)
 
     if len(phonemes) != len(phoneme_sections):
         print("\n\nposition: ",known_clips.tolist().index(x))
-        print("\nskipped: ", x, len(skipped), "\n\n\n")
+        print("\nskipped: ", x, len(skipped), "\n")
         skipped.append(x)
         continue
 
-    print(len(features))
+    print("Current segments count: ", len(features))
     for i in range(len(phoneme_sections)):
         raw_audio.append(audio[phoneme_sections[i][0]:phoneme_sections[i][1]])
         mfcc = librosa.feature.mfcc(
@@ -149,35 +150,46 @@ X_train.shape, X_test.shape,len(y_train), len(y_test) ,X_val.shape,  len(y_val)
 
 
 # In[12]:
-
-
 input_shape = (features_count, series_length)
-model = tf.keras.Sequential()
-model.add(LSTM(series_length, input_shape=input_shape))
-
-# %%
-model.add(tf.keras.layers.Embedding(mask_zero=True))
-model.add(tf.keras.layers.Masking())
-model.add(Dropout(0.2))
+model =tfk.Sequential()
+#model.add(tfkl.Conv2D(16, kernel_size=(2,2),activation='relu', input_shape=input_shape))
+#model.add(tfkl.MaxPooling2D(pool_size=(2,2), padding='same'))
+#model.add(tfkl.Reshape((-1,16)))
+#model.add(Dense(45, activation = 'relu', input_shape=input_shape))
+model.add(LSTM(160,activation='relu', input_shape=input_shape))
+#model.add(tfkl.Flatten())
+#model.add(Dropout(0.25))
 model.add(Dense(180, activation='relu'))
-model.add(Dense(135, activation='relu'))
-model.add(Dropout(0.4))
+#model.add(Dropout(0.25))
 model.add(Dense(90, activation='relu'))
+#model.add(Dense(64, activation='relu'))
+#model.add(Dense(64, activation='relu'))
+#model.add(Dense(64, activation='relu'))
+#model.add(Dense(64, activation='relu'))
 model.add(Dropout(0.4))
-model.add(Dense(45, activation='softmax'))
+model.add(Dense(45, activation = 'softmax'))
+model.compile(loss=tfk.losses.sparse_categorical_crossentropy, metrics=['accuracy'], optimizer=tfk.optimizers.Adam(learning_rate=1.3))
+#early_stop = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
 
-model.compile(optimizer='adam',
-              loss='SparseCategoricalCrossentropy', metrics=['acc'])
 
 # In[16]:
+X_train_r = X_train.reshape(X_train.shape[0], features_count, series_length,1)
+X_val_r = X_val.reshape(X_val.shape[0], features_count, series_length,1)
+X_test_r = X_test.reshape(X_test.shape[0], features_count, series_length,1)
+history = model.fit(X_train_r, y_train, epochs=5, batch_size=32,
+                    validation_data=(X_val_r, y_val), shuffle=False, verbose=1)
 
-history = model.fit(X_train, y_train, epochs=15, batch_size=500,
-                    validation_data=(X_test, y_test), shuffle=False, verbose=1)
+#%%
+history = model.fit(X_train, y_train, epochs=3, batch_size=150,
+                    validation_data=(X_val, y_val), shuffle=False, verbose=1)
+#%%
+test_loss , test_acc = model.evaluate(X_test, y_test, verbose=2)
+test_loss, test_acc
 
 # In[14]:
 model.summary()
 #%%
-model.save('model1')
+model.save('model_checkpoint')
 
 # In[ ]:
 model_attempt_1 = model
@@ -209,8 +221,19 @@ ax2.set_ylabel('Accuracy')
 ax2.legend()
 plt.show()
 # %%
-np.save('features_position_12376_to_14008.npy', output)
-np.save('labels_position_12376_to_14008.npy',labels)
+#np.save('checkpoint_features_position_2306_to_6727.npy', output)
+np.save('checkpoint_labels_position_2306_to_6727.npy',labels)
+#%%
+with open("checkpoint_features_position_2306_to_6727.npy", 'rb') as f:
+    output_2 = np.load(f, allow_pickle=True)
+with open("checkpoint_labels_position_2306_to_6727.npy", 'rb') as f:
+    labels_temp = np.load(f, allow_pickle=True)
+    labels_temp = labels.tolist()
+with open("raw_audio_Segments_2306.npy", 'rb') as f:
+    raw_audio = np.load(f, allow_pickle=True)
+    raw_audio = raw_audio.tolist()
+#%%
+np.save('raw_audio_Segments_2306.npy', raw_audio)
 # %%
 with open("features_position_12376.npy", 'rb') as f:
     features_old = np.load(f, allow_pickle=True)
@@ -227,6 +250,11 @@ with open("labels_position_12376_to_14008.npy", 'rb') as f:
 output = np.concatenate((features_old, features_new),axis=0)
 labels = np.concatenate((labels_old,labels_new),axis =0)
 
+#%%
 
+with open("checkpoint_features_position_2306.npy", 'rb') as f:
+    output = np.load(f, allow_pickle=True)
 # %%
-features_old.
+with open("checkpoint_labels_position_2075.npy", 'rb') as f:
+    labels = np.load(f, allow_pickle=True)
+# %%

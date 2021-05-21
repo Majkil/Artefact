@@ -61,15 +61,15 @@ def clip_from_segments(audio, segments):
     return voiced
 
 def process_clip(audio_path, expected_phonemes):
-    sr = 16000    
+    sr = 12000    
     hl = int(sr/100)
     fl = hl*2
 
     audio = load_clip(audio_path,sr )
     segments = split_into_segments(audio,hl,fl,sr )
-    phoneme_bits = all_phoneme_Sections_in_clip(audio,segments,sr=sr,frame_length=fl,hop_length= hl, min_duration=hl*5)
+    phoneme_bits = all_phoneme_Sections_in_clip(audio,segments,sr=sr,frame_length=fl,hop_length= hl, min_duration=hl*8)
     counter = 1
-    threshold = 0.05
+    threshold = 0.04
 
     while len(phoneme_bits) != expected_phonemes and counter <=12:
         #hl = int(sr/100)*counter
