@@ -31,6 +31,8 @@ model8="EM2c_samples-2000_covar-spherical_hopLength-8_sr-8000.joblib"
 
 # In[3]:
 
+
+
 clips = fcs.get_audio_files(libri_train)
 clip = clips[6701]
 EM = load(model7)

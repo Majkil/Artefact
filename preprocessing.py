@@ -4,7 +4,7 @@ from energy_split import *
 from m_dictionary import *
 
 
-def split_into_segments(audio, hop_length, frame_length, sr, min_voiced_duration_ms=500, energy_threshold=0.05):
+def split_into_segments(audio, hop_length, frame_length, sr, min_voiced_duration_ms=10, energy_threshold=0.05):
     segments = Split(audio, hop_length, frame_length, sr,
                      min_voiced_duration_ms, energy_threshold)
     return segments
@@ -31,7 +31,7 @@ def all_phones_to_array(transcription):
             # print(word)
             for char in word:
                 if char == 'ː':
-                    phone_array[-1] = phone_array[-1]+char
+                    phone_array[-1] = phone_array[-1] + char
                 else:
                     phone_array.append(char)
     return phone_array
@@ -44,12 +44,23 @@ def all_phoneme_Sections_in_clip(audio, segments, sr, frame_length, hop_length, 
         segment_boundaries = Split2(audio[starting:segment[1]], hop_length=hop_length,
                                     frame_length=frame_length, sr=sr, min_duration=min_duration)
         for bit in segment_boundaries:
-            x1 = starting+bit[0]
-            x2 = starting+bit[1]
+            x1 = starting + bit[0]
+            x2 = starting + bit[1]
             b = (x1, x2)
             all_bits.append(b)
     return all_bits
 
+def all_phoneme_Sections_in_clip2(audio, segments, hop_length, min_duration=700):
+    all_bits = []
+    for segment in segments:
+        starting = segment[0]
+        segment_boundaries = Split3(audio[starting:segment[1]], hop_length=hop_length)
+        for bit in segment_boundaries:
+            x1 = starting + bit[0]
+            x2 = starting + bit[1]
+            b = (x1, x2)
+            all_bits.append(b)
+    return all_bits
 
 def clip_from_segments(audio, segments):
     voiced = []
@@ -60,41 +71,83 @@ def clip_from_segments(audio, segments):
     print(voiced.shape)
     return voiced
 
-def process_clip(audio_path, expected_phonemes):
-    sr = 12000    
-    hl = int(sr/100)
-    fl = hl*2
 
-    audio = load_clip(audio_path,sr )
-    segments = split_into_segments(audio,hl,fl,sr )
-    phoneme_bits = all_phoneme_Sections_in_clip(audio,segments,sr=sr,frame_length=fl,hop_length= hl, min_duration=hl*8)
+def process_clip(audio_path, expected_phonemes):
+    sr = 12000
+    hl = int(sr / 100)
+    fl = hl * 2
+
+    audio = load_clip(audio_path, sr)
+    segments = split_into_segments(audio, hl, fl, sr)
+    phoneme_bits = all_phoneme_Sections_in_clip(audio, segments, sr=sr, frame_length=fl, hop_length=hl,
+                                                min_duration=hl * 8)
     counter = 1
     threshold = 0.04
 
-    while len(phoneme_bits) != expected_phonemes and counter <=12:
-        #hl = int(sr/100)*counter
-        
-        sr += 1000
-        audio = load_clip(audio_path,sr)
+    while len(phoneme_bits) != expected_phonemes and counter <= 12:
+        # hl = int(sr/100)*counter
+
         if len(phoneme_bits) > expected_phonemes:
-            threshold += 0.01
-            if hl >int(sr/100):
-                hl = int(sr/50)
-            elif hl > int(sr/200):
-                hl = int(sr/100)
-            elif hl > int(sr/250):
-                hl = int(sr/200)
+            if sr < 18000:
+                sr += 1000
+                audio = load_clip(audio_path, sr)
+            threshold += 0.005
+            if hl > int(sr / 100):
+                hl = int(sr / 50)
+            elif hl > int(sr / 200):
+                hl = int(sr / 100)
+            elif hl > int(sr / 250):
+                hl = int(sr / 200)
         else:
-            threshold -= 0.01
-            if hl <int(sr/100):
-                hl = int(sr/200)
-            elif hl < int(sr/200):
-                hl = int(sr/250)
-        fl = hl*2
-        segments = split_into_segments(audio, hl,fl,sr,energy_threshold=threshold)
-        phoneme_bits = all_phoneme_Sections_in_clip(audio,segments,sr,fl,hl, )
-        counter +=1
+            threshold -= 0.005
+            if hl < int(sr / 100):
+                hl = int(sr / 200)
+            elif hl < int(sr / 200):
+                hl = int(sr / 250)
+        fl = hl * 2
+        segments = split_into_segments(audio, hl, fl, sr, energy_threshold=threshold)
+        phoneme_bits = all_phoneme_Sections_in_clip(audio, segments, sr, fl, hl, )
+        counter += 1
     if len(phoneme_bits) == expected_phonemes:
-        return phoneme_bits ,sr
+        return segments , phoneme_bits, sr
     else:
-        return [], sr
+        return segments, [], sr
+
+def process_clip2(audio_path, expected_phonemes):
+    sr = 12000
+    hl = int(sr / 100)
+    fl = hl * 2
+
+    audio = load_clip(audio_path, sr)
+    segments = split_into_segments(audio, hl, fl, sr)
+    phoneme_bits = all_phoneme_Sections_in_clip2(audio, segments, hop_length=hl)
+    counter = 1
+    threshold = 0.04
+    while len(phoneme_bits) != expected_phonemes and counter <= 12:
+        # hl = int(sr/100)*counter
+
+        if len(phoneme_bits) > expected_phonemes:
+            if sr < 18000:
+                sr += 1000
+                audio = load_clip(audio_path, sr)
+            threshold += 0.005
+            if hl > int(sr / 100):
+                hl = int(sr / 50)
+            elif hl > int(sr / 200):
+                hl = int(sr / 100)
+            elif hl > int(sr / 250):
+                hl = int(sr / 200)
+        else:
+            threshold -= 0.005
+            if hl < int(sr / 100):
+                hl = int(sr / 200)
+            elif hl < int(sr / 200):
+                hl = int(sr / 250)
+        fl = hl * 2
+        segments = split_into_segments(audio, hl, fl, sr, energy_threshold=threshold)
+        phoneme_bits = all_phoneme_Sections_in_clip2(audio, segments, hop_length=hl)
+        counter += 1
+    if len(phoneme_bits) == expected_phonemes:
+        return segments , phoneme_bits, sr
+    else:
+        return segments, [], sr

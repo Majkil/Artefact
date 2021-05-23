@@ -17,7 +17,11 @@ def Split(audio, hop_length, frame_length, sr, min_duration=10,  energy_threshol
     f = librosa.feature.rms(audio, hop_length=hop_length,frame_length=frame_length)[0]
     start, end = 0, 0
     voiced = []
+
     n = normalize(f)
+    s_min = np.amin(n)
+    s_max = np.amax(n)
+    energy_threshold = s_min+(s_max-s_min)*energy_threshold
     for x in range(len(n)):
         if n[x] > energy_threshold:
             if start == 0:
@@ -33,11 +37,11 @@ def Split(audio, hop_length, frame_length, sr, min_duration=10,  energy_threshol
 
     for x in voiced:
         diff = x[1]-x[0]
-        if diff*hop_length >= min_duration:
-            trimmed.append([x[0]*hop_length,x[1]*hop_length])
+        if (diff*hop_length) >= min_duration:
+            trimmed.append([x[0],x[1]])
     if len(trimmed)==0:
         trimmed = [[0,len(audio)]]
-    return trimmed
+    return np.array(trimmed)*hop_length
 
 
 def Split2(audio, hop_length, frame_length, sr,  min_duration=700):
@@ -91,6 +95,28 @@ def Split2(audio, hop_length, frame_length, sr,  min_duration=700):
     #             boundaries.append(i)
     #             highest_gradien = 0
     return boundaries
+
+
+def Split3(audio, hop_length, min_duration=700):
+    sec_energy = librosa.feature.rms(np.abs(audio), hop_length=hop_length)[0]
+
+    mins = signal.argrelextrema(sec_energy, np.less)[0]
+    #maxs = signal.argrelextrema(sec_energy, np.greater)[0]
+    if not mins.any():
+        mins= np.append(mins,0)
+        mins = np.append(mins, len(sec_energy))
+    #if not maxs.any():
+    #    mins = np.append(maxs, len(sec_energy))
+    #if mins[0]>maxs[0]:
+        #mins= np.insert(mins,0,0)
+        #mins= np.append(mins,len(sec_energy))
+    tups = []
+    for i in range(len(mins)-1):
+        tups.append((mins[i], mins[i+1]))
+    #tups = list(zip(mins,maxs ))
+    return np.array(tups)*hop_length
+    
+
 
 
 def split_by_energy(audio, hop_length, frame_length):

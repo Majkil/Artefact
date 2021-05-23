@@ -7,8 +7,8 @@ import fastaudio.augment.preprocess as fap
 import fastaudio.augment.spectrogram as fas
 import matplotlib.pyplot as plt
 import pandas as pd
+from scipy import signal
 from scipy.io import wavfile
-from sklearn.mixture import GaussianMixture
 import IPython.display as ipd
 from joblib import dump, load
 
