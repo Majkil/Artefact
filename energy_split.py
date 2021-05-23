@@ -105,10 +105,18 @@ def Split3(audio, hop_length, sr , min_duration=300):
         mins = np.append(mins, len(sec_energy))
     tups = []
     maxs = signal.argrelextrema(sec_energy, np.greater)[0]
-    if (len(mins) >0 or len(maxs)> 0) and len(audio)/sr < 2*min_duration/1000 :
+    # if too short to have at least 2 subsections
+    if (len(mins) > 0 or len(maxs)> 0) and len(audio)/sr < 2*min_duration/1000 :
         return [(0,len(audio))]
-    if len(mins)<=1:
+    if len(mins)==1 and mins[0] < len(audio)/hop_length/3 and len(maxs)==1 and len(audio)/hop_length/3 < maxs[0] <len(audio)/hop_length/3*2:
+        tups.append((0,maxs[0]))
+        tups.append((maxs[0], math.ceil(len(audio)/hop_length)))
+        return  np.array(tups)*hop_length
+    mins = [*mins,*maxs]
+    mins.sort()
 
+    # not enough usable peaks or valleys detected
+    if len(mins)<=1:
         if len(maxs)==2:
             tups.append((maxs[0], maxs[1]))
         elif mins[0] < 1 and (mins[0] * hop_length )/ sr < min_duration / 1000:
@@ -120,8 +128,8 @@ def Split3(audio, hop_length, sr , min_duration=300):
         elif len(maxs)>2:
             mins = maxs
         else:
-            return
-    #short_point = 0
+            return [()]
+    # create tuples for subsections
     for i in range(len(mins)-1):
         if (mins[i+1]-mins[i])*hop_length/sr < min_duration/1000 :
             if i == len(mins)-1:
@@ -145,12 +153,14 @@ def Split3(audio, hop_length, sr , min_duration=300):
             except:
                 if mins[i] !=0 and mins[i]*hop_length/sr < min_duration/1000:
                     tups.append((0, mins[i+1] ))
-
+    #handle final value
+    if (mins[-1]-mins[-2])*hop_length/sr> min_duration:
+        tups.append((mins[-2],mins[-1]))
     if (tups[-1][1]-tups[-1][0])*hop_length/sr < min_duration/1000 or(mins[-1]-mins[-2])*hop_length/sr < min_duration/1000:
         tups[-1]= (tups[-1][0],mins[-1])
     else:
         tups.append( (tups[-1][1], mins[-1]))
-    #tups = list(zip(mins,maxs ))
+
     return np.array(tups)*hop_length
     
 
