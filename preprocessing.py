@@ -32,6 +32,21 @@ def all_phones_to_array(transcription):
             for char in word:
                 if char == 'ː':
                     phone_array[-1] = phone_array[-1] + char
+                elif char =='ɪ':
+                    if phone_array[-1]=='e' or phone_array[-1]=='a' or phone_array[-1]== 'ɔ':
+                        phone_array[-1] = phone_array[-1] + char
+                elif char =='ʊ':
+                    if phone_array[-1]=='o' or phone_array[-1]=='a' :
+                        phone_array[-1] = phone_array[-1] + char
+                elif char =='ʒ':
+                    if phone_array[-1]== 'd':
+                        phone_array[-1] = phone_array[-1] + char
+                elif char =='ʃ':
+                    if phone_array[-1]=='t':
+                        phone_array[-1] = phone_array[-1] + char
+                elif char =='ə':
+                    if phone_array[-1] ==  'e' or phone_array[-1] =='ɪ'   or phone_array[-1] == 'ʊ' :
+                        phone_array[-1] = phone_array[-1] + char
                 else:
                     phone_array.append(char)
     return phone_array
