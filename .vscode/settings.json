@@ -1,5 +1,5 @@
 {
     "python.formatting.provider": "autopep8",
-    "jupyter.jupyterServerType": "local",
+    "jupyter.jupyterServerType": "remote",
     "python.pythonPath": "c:\\Users\\nerdi\\.conda\\envs\\pyAudio\\python.exe"
 }

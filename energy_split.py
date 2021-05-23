@@ -97,22 +97,59 @@ def Split2(audio, hop_length, frame_length, sr,  min_duration=700):
     return boundaries
 
 
-def Split3(audio, hop_length, min_duration=700):
+def Split3(audio, hop_length, sr , min_duration=300):
     sec_energy = librosa.feature.rms(np.abs(audio), hop_length=hop_length)[0]
-
     mins = signal.argrelextrema(sec_energy, np.less)[0]
-    #maxs = signal.argrelextrema(sec_energy, np.greater)[0]
     if not mins.any():
         mins= np.append(mins,0)
         mins = np.append(mins, len(sec_energy))
-    #if not maxs.any():
-    #    mins = np.append(maxs, len(sec_energy))
-    #if mins[0]>maxs[0]:
-        #mins= np.insert(mins,0,0)
-        #mins= np.append(mins,len(sec_energy))
     tups = []
+    maxs = signal.argrelextrema(sec_energy, np.greater)[0]
+    if (len(mins) >0 or len(maxs)> 0) and len(audio)/sr < 2*min_duration/1000 :
+        return [(0,len(audio))]
+    if len(mins)<=1:
+
+        if len(maxs)==2:
+            tups.append((maxs[0], maxs[1]))
+        elif mins[0] < 1 and (mins[0] * hop_length )/ sr < min_duration / 1000:
+            tups.append((0, mins[0]))
+        elif mins[0] < 1 and ((mins[0] * hop_length )-len(audio))/ sr < min_duration / 1000:
+            tups.append((mins[0], len(audio)))
+        elif len(maxs)==1 and maxs[0]!=0 and (maxs[0] * hop_length )/ sr < min_duration / 1000:
+            tups.append((0,maxs[0]))
+        elif len(maxs)>2:
+            mins = maxs
+        else:
+            return
+    #short_point = 0
     for i in range(len(mins)-1):
-        tups.append((mins[i], mins[i+1]))
+        if (mins[i+1]-mins[i])*hop_length/sr < min_duration/1000 :
+            if i == len(mins)-1:
+                tups[-1] = (tups[-1][0], mins[i])
+            if len(tups) >= 1 and (tups[-1][1]- tups[-1][0])*hop_length/sr < min_duration/1000 :
+                tups[-1] = (tups[-1][0], mins[i])
+            elif len(tups) >= 1:
+                tups.append(  (tups[-1][1], mins[i]))
+            else:
+                tups.append((0, mins[i]))
+            #short_point = mins[i]
+            #replace the end of the previous tuple
+        elif  (mins[i+1]-mins[i])*hop_length/sr >= min_duration/1000 :
+            if len(tups)>0 and tups[-1][1]-tups[-1][0]*hop_length/sr > min_duration/1000:
+                tups[-1] = ( tups[-1][0], mins[i])
+            else:
+                tups.append((mins[i], mins[i+1]))
+        else:
+            try:
+                tups.append((tups[-1][1], mins[i]) )
+            except:
+                if mins[i] !=0 and mins[i]*hop_length/sr < min_duration/1000:
+                    tups.append((0, mins[i+1] ))
+
+    if (tups[-1][1]-tups[-1][0])*hop_length/sr < min_duration/1000 or(mins[-1]-mins[-2])*hop_length/sr < min_duration/1000:
+        tups[-1]= (tups[-1][0],mins[-1])
+    else:
+        tups.append( (tups[-1][1], mins[-1]))
     #tups = list(zip(mins,maxs ))
     return np.array(tups)*hop_length
     
