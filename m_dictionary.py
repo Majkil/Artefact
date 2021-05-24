@@ -17,10 +17,9 @@ def get_phonemes_for_word(query_string):
     }
     resp = es.search(index=index, body=doc)
     if resp["hits"]["hits"]:
-        phone_array = resp["hits"]["hits"][0]["_source"]["phones"][0].split(',')[
-            0]
+        phone_array = resp["hits"]["hits"][0]["_source"]["phones"][0].split(',')[0]
         phone_array = phone_array.replace(
-            '\u200d', '').replace("/", '').replace("ˈ", '')
+            '\u200d', '').replace("/", '').replace("ˈ", '').replace("ˌ",'')
         return phone_array
     else:
         return " "

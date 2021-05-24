@@ -10,7 +10,7 @@ from sklearn.preprocessing import normalize
 from sklearn.model_selection import train_test_split
 from utilities import *
 from preprocessing import *
-import pandas as pd
+
 
 lvpath = "E:\Datasets\Voice\Librivox\dev\LibriSpeech\dev-clean"
 libri_train = "E:\Datasets\Voice\LibriSpeech"
@@ -57,13 +57,16 @@ with open("known_clips.npy", 'rb') as f:
 
 
 # In[243]:
-labels_all = []
-for x in exact:
-    transcription = load_clip_transcription(x)
-    phonemes = all_phones_to_array(transcription)
-    for i in np.unique(phonemes):
-        labels_all.append(i)
-unique_phones = np.unique(labels_all).tolist()
+# labels_all = []
+# for x in exact:
+#     transcription = load_clip_transcription(x)
+#     phonemes = all_phones_to_array(transcription)
+#     labels_all.extend(np.unique(phonemes))
+# unique_phones = np.unique(labels_all).tolist()
+#np.save('unique_phones.npy',unique_phones)
+with open("unique_phones.npy", 'rb') as f:
+    unique_phones = np.load(f, allow_pickle=True)
+
 
 # In[9]:
 features_count = 20
@@ -79,32 +82,14 @@ hl_4ms = int(sr/250)
 # %% 
 # 0 to 12386 no scanning
 # 12386  to 14008 with scanning
-for x in known_clips[6727:-1]:
+for x in known_clips[0:500]:
     # x =exact[0]
     transcription = load_clip_transcription(x)
     phonemes = all_phones_to_array(transcription)
     #scan for parameters
-    phoneme_sections, sr = process_clip(x, len(phonemes))
+    segments , phoneme_sections, sr = process_clip2(x, len(phonemes))
     audio = load_clip(x, sr)
     
-    # 4m hoplength 3% energy
-    # if len(phonemes) > len(phoneme_sections):
-    #     segments = split_into_segments(
-    #         audio, hl_4ms, frame_length, sr, min_voiced_duration_ms, energy_threshold=0.06)
-    #     phoneme_sections = all_phoneme_Sections_in_clip(
-    #         audio, segments, sr, frame_length, hl_4ms, min_duration)
-    # # 10ms hoplength 3% energy
-    # if len(phonemes) < len(phoneme_sections):
-    #     segments = split_into_segments(
-    #         audio, hl_10ms, frame_length=hl_10ms*2, sr=sr, min_voiced_duration_ms=min_voiced_duration_ms,  energy_threshold=0.03)
-    #     phoneme_sections = all_phoneme_Sections_in_clip(
-    #         audio, segments, sr=sr, frame_length=hl_10ms*2, hop_length=hl_10ms, min_duration=min_duration)
-    # if len(phonemes) != len(phoneme_sections):
-    #     segments = split_into_segments(
-    #         audio, hl_10ms, frame_length=hl_10ms*3, sr=sr, min_voiced_duration_ms=min_voiced_duration_ms,  energy_threshold=0.04)
-    #     phoneme_sections = all_phoneme_Sections_in_clip(
-    #         audio, segments, sr=sr, frame_length=hl_10ms*3, hop_length=hl_10ms, min_duration=min_duration)
-
     if len(phonemes) != len(phoneme_sections):
         print("\n\nposition: ",known_clips.tolist().index(x))
         print("\nskipped: ", x, len(skipped), "\n")

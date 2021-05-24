@@ -113,7 +113,9 @@ def Split3(audio, hop_length, sr , min_duration=300):
         tups.append((maxs[0], math.ceil(len(audio)/hop_length)))
         return  np.array(tups)*hop_length
     mins = [*mins,*maxs]
+    mins.append( math.ceil(len(audio)/hop_length))
     mins.sort()
+
 
     # not enough usable peaks or valleys detected
     if len(mins)<=1:
