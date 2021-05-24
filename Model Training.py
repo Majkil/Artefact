@@ -66,6 +66,7 @@ with open("known_clips.npy", 'rb') as f:
 #np.save('unique_phones.npy',unique_phones)
 with open("unique_phones.npy", 'rb') as f:
     unique_phones = np.load(f, allow_pickle=True)
+    unique_phones = unique_phones.tolist()
 
 
 # In[9]:
@@ -82,7 +83,7 @@ hl_4ms = int(sr/250)
 # %% 
 # 0 to 12386 no scanning
 # 12386  to 14008 with scanning
-for x in known_clips[0:500]:
+for x in known_clips[4000:5000]:
     # x =exact[0]
     transcription = load_clip_transcription(x)
     phonemes = all_phones_to_array(transcription)
@@ -92,11 +93,10 @@ for x in known_clips[0:500]:
     
     if len(phonemes) != len(phoneme_sections):
         print("\n\nposition: ",known_clips.tolist().index(x))
-        print("\nskipped: ", x, len(skipped), "\n")
+        #print("\nskipped: ", x, len(skipped), "\n")
         skipped.append(x)
         continue
 
-    print("Current segments count: ", len(features))
     for i in range(len(phoneme_sections)):
         raw_audio.append(audio[phoneme_sections[i][0]:phoneme_sections[i][1]])
         mfcc = librosa.feature.mfcc(
@@ -108,6 +108,7 @@ for x in known_clips[0:500]:
             features.append(data)
         except:
             print(phonemes[i], mfcc.shape)
+    print("Current segments count: ", len(features))
 
 
 # In[10]:
@@ -135,24 +136,25 @@ X_train.shape, X_test.shape,len(y_train), len(y_test) ,X_val.shape,  len(y_val)
 
 
 # In[12]:
-input_shape = (features_count, series_length)
+input_shape = (features_count, series_length,1)
 model =tfk.Sequential()
-#model.add(tfkl.Conv2D(16, kernel_size=(2,2),activation='relu', input_shape=input_shape))
-#model.add(tfkl.MaxPooling2D(pool_size=(2,2), padding='same'))
-#model.add(tfkl.Reshape((-1,16)))
-#model.add(Dense(45, activation = 'relu', input_shape=input_shape))
-model.add(LSTM(160,activation='relu', input_shape=input_shape))
-#model.add(tfkl.Flatten())
-#model.add(Dropout(0.25))
-model.add(Dense(180, activation='relu'))
-#model.add(Dropout(0.25))
-model.add(Dense(90, activation='relu'))
-#model.add(Dense(64, activation='relu'))
-#model.add(Dense(64, activation='relu'))
-#model.add(Dense(64, activation='relu'))
-#model.add(Dense(64, activation='relu'))
+model.add(tfkl.Conv2D(16, kernel_size=(2,2),activation='relu', input_shape=input_shape))
+model.add(tfkl.MaxPooling2D(pool_size=(2,2), padding='same'))
+model.add(tfkl.Reshape((-1,16)))
+model.add(LSTM(128,input_shape=input_shape))
+model.add(Dropout(0.2))
+model.add(Dense(128, activation='relu'))
+model.add(Dense(64, activation='relu'))
 model.add(Dropout(0.4))
-model.add(Dense(45, activation = 'softmax'))
+model.add(Dense(64, activation='relu'))
+model.add(Dropout(0.4))
+model.add(Dense(48, activation='relu'))
+model.add(Dropout(0.4))
+model.add(Dense(64, activation='relu'))
+model.add(Dropout(0.4))
+model.add(Dense(48, activation='relu'))
+model.add(Dropout(0.4))
+model.add(Dense(len(unique_phones), activation='softmax'))
 model.compile(loss=tfk.losses.sparse_categorical_crossentropy, metrics=['accuracy'], optimizer=tfk.optimizers.Adam(learning_rate=1.3))
 #early_stop = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
 
@@ -163,9 +165,31 @@ X_val_r = X_val.reshape(X_val.shape[0], features_count, series_length,1)
 X_test_r = X_test.reshape(X_test.shape[0], features_count, series_length,1)
 history = model.fit(X_train_r, y_train, epochs=5, batch_size=32,
                     validation_data=(X_val_r, y_val), shuffle=False, verbose=1)
+#%%
+test_loss , test_acc = model.evaluate(X_test_r, y_test, verbose=2)
 
 #%%
-history = model.fit(X_train, y_train, epochs=3, batch_size=150,
+input_shape = (features_count, series_length)
+model = tfk.Sequential()
+model.add(LSTM(128,input_shape=input_shape))
+model.add(Dropout(0.2))
+model.add(Dense(128, activation='relu'))
+model.add(Dense(64, activation='relu'))
+model.add(Dropout(0.4))
+model.add(Dense(64, activation='relu'))
+model.add(Dropout(0.4))
+model.add(Dense(48, activation='relu'))
+model.add(Dropout(0.4))
+model.add(Dense(64, activation='relu'))
+model.add(Dropout(0.4))
+model.add(Dense(48, activation='relu'))
+model.add(Dropout(0.4))
+model.add(Dense(len(unique_phones), activation='softmax'))
+model.compile(loss=tfk.losses.sparse_categorical_crossentropy, metrics=['accuracy'], optimizer=tfk.optimizers.Adam(learning_rate=1.3))
+model.summary()
+
+#%%
+history = model.fit(X_train, y_train, epochs=15, batch_size=150,
                     validation_data=(X_val, y_val), shuffle=False, verbose=1)
 #%%
 test_loss , test_acc = model.evaluate(X_test, y_test, verbose=2)
@@ -206,8 +230,9 @@ ax2.set_ylabel('Accuracy')
 ax2.legend()
 plt.show()
 # %%
-#np.save('checkpoint_features_position_2306_to_6727.npy', output)
-np.save('checkpoint_labels_position_2306_to_6727.npy',labels)
+np.save('raw_audio_new_1700_5000.npy', raw_audio)
+np.save('labels_new_1700_5000.npy',labels)
+np.save('features_new_1700_5000.npy', features)
 #%%
 with open("checkpoint_features_position_2306_to_6727.npy", 'rb') as f:
     output_2 = np.load(f, allow_pickle=True)
