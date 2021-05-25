@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 from sklearn.mixture import GaussianMixture
 import fastaudio.core.signal as fcs
 import GetTranscription
-import antropy as ant
 import torch
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Tokenizer
 from pydub import AudioSegment
@@ -20,6 +19,8 @@ mcvpath ="E:\Datasets\Voice\Mozilla Common Voice\en\cv-corpus-6.1-2020-12-11\en\
 clips =fcs.get_audio_files(mcvpath)
 
 clip= clips[380]
+transcription = load_clip_transcription(clip)
+
 try:
     audio,sr = librosa.load(clip)   
 except:
@@ -40,3 +41,4 @@ prediction = torch.argmax(logits, dim = -1)
 transcription = tokenizer.batch_decode(prediction)[0]
 #print("Actual transcription: ", GetTranscription.get_file_transcript(clip))
 print("Model Transcription:  ", transcription)
+

@@ -1,3 +1,4 @@
+from numpy import lib
 from utilities import *
 import math
 
@@ -99,6 +100,7 @@ def Split2(audio, hop_length, frame_length, sr,  min_duration=700):
 
 def Split3(audio, hop_length, sr , min_duration=300):
     sec_energy = librosa.feature.rms(np.abs(audio), hop_length=hop_length)[0]
+    sec_energy = librosa.effects.preemphasis(sec_energy)
     mins = signal.argrelextrema(sec_energy, np.less)[0]
     if not mins.any():
         mins= np.append(mins,0)

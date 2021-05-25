@@ -1,4 +1,4 @@
-# In[2]:
+#%% Imports
 from re import X
 from sklearn import preprocessing
 from tensorflow.keras import activations
@@ -25,7 +25,7 @@ single_word = "./samples/but bowl.wav"
 # In[3]:
 clips = fcs.get_audio_files(libri_train)
 print(len(clips))
-sr = 16000
+sr = 22000
 hop_length = int(sr/200)
 frame_length = int(hop_length*2)
 min_duration = hop_length*10
@@ -70,8 +70,8 @@ with open("unique_phones.npy", 'rb') as f:
 
 
 # In[9]:
-features_count = 20
-series_length = 160
+features_count = 24
+series_length = 150
 features = []
 labels = []
 skipped = []
@@ -80,10 +80,39 @@ raw_audio= []
 #%%
 hl_10ms = int(sr/100)
 hl_4ms = int(sr/250)
+phoneme_audio =[]
+phoneme_audio_labels =[]
 # %% 
-# 0 to 12386 no scanning
-# 12386  to 14008 with scanning
-for x in known_clips[4000:5000]:
+# processing data using the fb pretrain asr model
+for f in clips[2129:4000]:
+    bits,bit_labels = process_clip_with_fb(f)
+    phoneme_audio.extend(bits)
+    phoneme_audio_labels.extend(bit_labels)
+    print("\nextracted : ", len(bits), " current total:", len(phoneme_audio))
+    print("position: ",clips.index(f),"\n")
+#%%    
+np.save("fb_raw_audio.npy", phoneme_audio)
+np.save("fb_raw_audio_labels.npy", phoneme_audio_labels)
+
+#%%
+
+with open("fb_raw_audio.npy", 'rb') as f:
+    phoneme_audio = np.load(f, allow_pickle=True).tolist()
+with open("fb_raw_audio_labels.npy", 'rb') as f:
+    phoneme_audio_labels = np.load(f, allow_pickle=True).tolist()
+
+#%%
+ for i in range(len(phoneme_audio)):
+    temp_audio = librosa.effects.preemphasis(phoneme_audio[i])
+    mfcc = librosa.feature.mfcc(temp_audio,hop_length=hop_length, sr=sr, n_mfcc=features_count)
+    try:
+        data = np.array([padding(mfcc, features_count, series_length)])
+        labels.append(unique_phones.index(phoneme_audio_labels[i]))
+        features.append(data)
+    except:
+        print(phoneme_audio_labels[i], mfcc.shape)
+#%%
+for x in known_clips[5000:-1]:
     # x =exact[0]
     transcription = load_clip_transcription(x)
     phonemes = all_phones_to_array(transcription)
@@ -194,6 +223,24 @@ history = model.fit(X_train, y_train, epochs=15, batch_size=150,
 #%%
 test_loss , test_acc = model.evaluate(X_test, y_test, verbose=2)
 test_loss, test_acc
+#%%
+
+vgg = tf.keras.applications.VGG16(
+    include_top=True,
+    weights="imagenet",
+    input_tensor=None,
+    input_shape=(features_count, series_length),
+    pooling=None,
+    classes=1000,
+    classifier_activation="softmax",
+)
+vgg.summary()
+#%%
+vgg.evaluate(X_test, y_test, verbose=2)
+#%%
+#vgg.add(Dense(len(unique_phones), activation='softmax'))
+vgg.compile(loss=tfk.losses.sparse_categorical_crossentropy, metrics=['accuracy'], optimizer=tfk.optimizers.Adam(learning_rate=1.3))
+vgg.summary()
 
 # In[14]:
 model.summary()
