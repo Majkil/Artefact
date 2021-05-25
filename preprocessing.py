@@ -37,7 +37,7 @@ def all_phones_to_array(transcription):
                     phone_array[-1] = phone_array[-1] + char
                 elif char == 'ɪ' and (phone_array[-1] == 'e' or phone_array[-1] == 'a' or phone_array[-1] == 'ɔ'):
                     phone_array[-1] = phone_array[-1] + char
-                elif char == 'ʊ' and (phone_array[-1] == 'o' or phone_array[-1] == 'a'):
+                elif char == 'ʊ' and (phone_array[-1] == 'o' or phone_array[-1] == 'a' or  phone_array[-1] == 'ə'):
                     phone_array[-1] = phone_array[-1] + char
                 elif char == 'ʒ' and (phone_array[-1] == 'd'):
                     phone_array[-1] = phone_array[-1] + char
@@ -45,6 +45,7 @@ def all_phones_to_array(transcription):
                     phone_array[-1] = phone_array[-1] + char
                 elif char == 'ə' and (phone_array[-1] == 'e' or phone_array[-1] == 'ɪ' or phone_array[-1] == 'ʊ'):
                     phone_array[-1] = phone_array[-1] + char
+
                 else:
                     phone_array.append(char)
     return phone_array
@@ -234,7 +235,7 @@ def process_clip_with_fb(clip_address):
     fl = hl*2
     audio = load_clip(clip_address, sr)
     segments = split_into_segments(
-        audio, hop_length=hl, frame_length=fl, sr=sr, min_voiced_duration_ms=300, energy_threshold=0.05)
+        audio, hop_length=hl, frame_length=fl, sr=sr, min_voiced_duration_ms=200, energy_threshold=0.05)
     transcription = GetTranscription.get_file_transcript(clip_address)
     return_bits = []
     return_labels = []
@@ -252,8 +253,13 @@ def process_clip_with_fb(clip_address):
             if 'XXXXXX' not in graphemes:
                 phoneme_bits = Split3(seg_data, hl ,sr, min_duration)
                 #phoneme_bits = all_phoneme_Sections_in_clip2(                audio=audio, segments=[segment], sr=sr, hop_length=hl, min_duration=min_duration)
+                while len(graphemes) < len(phoneme_bits):
+                    min_duration +=5
+                    phoneme_bits = Split3(seg_data, hl ,sr, min_duration)
                 if len(graphemes) == len(phoneme_bits) and len(graphemes)!=0:
                     return_labels.extend(graphemes)
                     for b in phoneme_bits:
                         return_bits.append(audio[s+b[0]:s+b[1]])
+               
+                
     return return_bits, return_labels

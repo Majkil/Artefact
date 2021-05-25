@@ -2,18 +2,19 @@ from numpy import lib
 from utilities import *
 import math
 
-##
-# @brief Returns voiced sections depending on set energy theshold
-#
-# Keyword argument:
-# @param audio -- librosa audio sequence
-# @param hop_length -- hop length in frames
-# @param sr -- audio sampling rate
-# @param min_duration -- minimum section duration in milli seconds
-# @param energy_threshold -- minimum energy to be considered non silent in percentage
 
 
 def Split(audio, hop_length, frame_length, sr, min_duration=10,  energy_threshold=0.05):
+    ##
+    # @brief Returns voiced sections depending on set energy theshold
+    #
+    # Keyword argument:
+    # @param audio -- librosa audio sequence
+    # @param hop_length -- hop length in frames
+    # @param sr -- audio sampling rate
+    # @param min_duration -- minimum section duration in milli seconds
+    # @param energy_threshold -- minimum energy to be considered non silent in percentage
+
     min_duration = (sr/1000)*min_duration
     f = librosa.feature.rms(audio, hop_length=hop_length,frame_length=frame_length)[0]
     start, end = 0, 0
@@ -28,7 +29,7 @@ def Split(audio, hop_length, frame_length, sr, min_duration=10,  energy_threshol
         if above_t[x]+1 == above_t[x+1] and start ==0:
             start = above_t[x]
         #check upto 3 frames away for sequence continuation
-        elif above_t[x+1] > above_t[x]+3 and start !=0:
+        elif above_t[x+1] > above_t[x]+(int((min_duration/hop_length)/2)) and start !=0:
             end = above_t[x]
             voiced.append([start, end])
             start, end = 0, 0
@@ -109,9 +110,10 @@ def Split2(audio, hop_length, frame_length, sr,  min_duration=700):
 
 
 def Split3(audio, hop_length, sr , min_duration=300):
+    # get RMS energy and apply preemphasis filter
     sec_energy = librosa.feature.rms(np.abs(audio), hop_length=hop_length)[0]
     sec_energy = librosa.effects.preemphasis(sec_energy)
-    mins = signal.argrelextrema(sec_energy, np.less)[0]
+    mins =  signal.argrelextrema(sec_energy, np.less)[0]
     if not mins.any():
         mins= np.append(mins,0)
         mins = np.append(mins, len(sec_energy))
@@ -124,8 +126,8 @@ def Split3(audio, hop_length, sr , min_duration=300):
         tups.append((0,maxs[0]))
         tups.append((maxs[0], math.ceil(len(audio)/hop_length)))
         return  np.array(tups)*hop_length
-   # mins = [*mins,*maxs]
-    mins.append( math.ceil(len(audio)/hop_length))
+    #mins = [*mins,*maxs]
+    mins.tolist().append( math.ceil(len(audio)/hop_length))
     mins.sort()
 
 
@@ -145,22 +147,30 @@ def Split3(audio, hop_length, sr , min_duration=300):
             return [()]
     # create tuples for subsections
     for i in range(len(mins)-1):
+        #distance between next two valleys less than min_duration
         if (mins[i+1]-mins[i])*hop_length/sr < min_duration/1000 :
+            # if shorter than min and this is the last valley, add it to the last segment
             if i == len(mins)-1:
                 tups[-1] = (tups[-1][0], mins[i])
+            #if not first segment and previous segment is shorter than minimum duration, add it to the last segment
             if len(tups) >= 1 and (tups[-1][1]- tups[-1][0])*hop_length/sr < min_duration/1000 :
                 tups[-1] = (tups[-1][0], mins[i])
+            #if previous segment is long enough start a new segment
             elif len(tups) >= 1:
                 tups.append(  (tups[-1][1], mins[i]))
+            #else this is the first segment
             else:
                 tups.append((0, mins[i]))
-            #short_point = mins[i]
-            #replace the end of the previous tuple
+            
+        #if distance between next 2 valleys is the >= min duration    
         elif  (mins[i+1]-mins[i])*hop_length/sr >= min_duration/1000 :
+            # if previous segment is too short append it
             if len(tups)>0 and tups[-1][1]-tups[-1][0]*hop_length/sr > min_duration/1000:
                 tups[-1] = ( tups[-1][0], mins[i])
+            #else create a new segment with next 2 valleys
             else:
                 tups.append((mins[i], mins[i+1]))
+        # this code should never be reached
         else:
             try:
                 tups.append((tups[-1][1], mins[i]) )
@@ -177,39 +187,3 @@ def Split3(audio, hop_length, sr , min_duration=300):
 
     return np.array(tups)*hop_length
     
-
-
-
-def split_by_energy(audio, hop_length, frame_length):
-    frames = len(audio)
-    # root mean squared energy
-    energy = librosa.feature.rms(
-        audio, frame_length=frame_length, hop_length=hop_length)[0]
-    # rate of change of energy
-    delta_energy = librosa.feature.delta(energy)
-    # rate of change of change of energy
-    delta_energy2 = librosa.feature.delta(delta_energy)
-
-    scaled_audio = normalize(audio)
-    rms_norm = normalize(energy)
-    s_d_energy = normalize(delta_energy)
-    s_d_2_energy = normalize(delta_energy2)
-
-    audio_range = np.max(scaled_audio) - np.min(scaled_audio)
-    print(audio_range)
-    mean = np.mean(scaled_audio)
-
-    #print("scaled delta energy less than 0.5 ", np.count_nonzero( s_d_energy<0.8))
-    #print("scaled audio less than 0.5 ", np.count_nonzero(0.45 >scaled_audio or scaled_audio> 0.55))
-
-    out = []
-    # blue audio
-    # yellow energy
-    # green de1
-    # red de2
-    for x in range(frames):
-        if scaled_audio[x] > (mean+0.01) or scaled_audio[x] < (mean-0.01):
-
-            if s_d_energy[x] < 0.8:
-                out.append(x)
-    return out
