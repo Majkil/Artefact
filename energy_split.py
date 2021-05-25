@@ -20,19 +20,29 @@ def Split(audio, hop_length, frame_length, sr, min_duration=10,  energy_threshol
     voiced = []
 
     n = normalize(f)
-    s_min = np.amin(n)
-    s_max = np.amax(n)
-    energy_threshold = s_min+(s_max-s_min)*energy_threshold
-    for x in range(len(n)):
-        if n[x] > energy_threshold:
-            if start == 0:
-                start = x
-                #print(x , len(n))
-            if start != 0 and x < len(n)-2:
-                if n[x+1] < energy_threshold and start != x:
-                    end = x
-                    voiced.append([start, end])
-                    start, end = 0, 0
+   
+    
+    above_t =   np.where(n>=energy_threshold)[0]
+    for x in range(len(above_t)-1):
+        #if next frame in next in sequence
+        if above_t[x]+1 == above_t[x+1] and start ==0:
+            start = above_t[x]
+        #check upto 3 frames away for sequence continuation
+        elif above_t[x+1] > above_t[x]+3 and start !=0:
+            end = above_t[x]
+            voiced.append([start, end])
+            start, end = 0, 0
+
+    # for x in range(len(n)):
+    #     if n[x] > energy_threshold:
+    #         if start == 0:
+    #             start = x
+    #             #print(x , len(n))
+    #         if start != 0 and x < len(n)-2:
+    #             if n[x+1] < energy_threshold and start != x:
+    #                 end = x
+    #                 voiced.append([start, end])
+    #                 start, end = 0, 0
 
     trimmed = []
 
@@ -114,7 +124,7 @@ def Split3(audio, hop_length, sr , min_duration=300):
         tups.append((0,maxs[0]))
         tups.append((maxs[0], math.ceil(len(audio)/hop_length)))
         return  np.array(tups)*hop_length
-    mins = [*mins,*maxs]
+   # mins = [*mins,*maxs]
     mins.append( math.ceil(len(audio)/hop_length))
     mins.sort()
 
