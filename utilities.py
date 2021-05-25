@@ -18,9 +18,8 @@ import textdistance
 textdistance.jaro_winkler("they are going to school", "school")
 
 tokenizer = Wav2Vec2Tokenizer.from_pretrained(
-        "facebook/wav2vec2-base-960h")
+    "facebook/wav2vec2-base-960h")
 model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
-    
 
 
 def normalize(x, axis=0):
@@ -28,10 +27,7 @@ def normalize(x, axis=0):
 
 
 def transcribe_audio_fb(audio):
-    # tokenizer = Wav2Vec2Tokenizer.from_pretrained(
-    #     "facebook/wav2vec2-base-960h")
-    # model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
-    
+
     input_values = tokenizer(audio, return_tensors="pt").input_values
 
     logits = model(input_values).logits
