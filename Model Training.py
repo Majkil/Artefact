@@ -257,29 +257,32 @@ with open("checked_labels.npy", 'rb') as f:
 #%%
 car = librosa.load('./car.wav',22000)
 car_split = Split3(car[0], hop_length,sr,min_duration=750)
-temp_audio = librosa.effects.preemphasis(car[0][0:16720])
-mfcc_checked1 = librosa.feature.mfcc(
-        temp_audio, hop_length=hop_length, sr=sr, n_mfcc=features_count)
-mfcc_checked1
-
-data_checked1 = np.array([padding(mfcc_checked1, features_count, series_length)])
+toTest = []
+for x in range(3):
+    temp_audio = librosa.effects.preemphasis(car[0][car_split[x][0]:car_split[x][1]])
+    mfcc_checked1 = librosa.feature.mfcc(
+            temp_audio, hop_length=hop_length, sr=sr, n_mfcc=features_count)
+    mfcc_checked1
+    data_checked1 = np.array([padding(mfcc_checked1, features_count, series_length)])
+    toTest.append(data_checked1)
+toTest = np.concatenate(toTest)
 #%%
-pc1 = filtered_model.predict([data_checked1][0:1])
+pc1 = filtered_model.predict([toTest[0:3]])
 
 print(unique_phones[np.argmax(pc1)] , check_labels[70])
 
-pc1[0][np.argmax(pc1)] =0
+pc1[0][np.argmax(pc1[0])] = 0
 print(unique_phones[np.argmax(pc1)] , check_labels[70])
 pc1[0][np.argmax(pc1)] =0
-print(unique_phones[np.argm\ax(pc1)] , check_labels[70])
-print(pc1 , np.argmax(pc1))
+print(unique_phones[np.argmax(pc1)] , check_labels[70])
+print( np.argmax(pc1))
 
 
 
 #%%
 
 for u in unique_phones:
-    print("phoneme",u ,"count:", accurate_labels.count(u) , "label: ", unique_phones.index(u))
+    print("phoneme",u ,"count:", accurate_labels.count( unique_phones.index(u )) , "label: ", unique_phones.index(u))
 
 
 

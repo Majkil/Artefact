@@ -32,7 +32,7 @@ print(GetTranscription.get_file_transcript(clip))
 print(audio.shape)
 #In[]
 threshold = 0.5
-segments = Split(audio,hop_length,frame_length,min_duration=20,sr=sr, energy_threshold=0.04)
+segments = split_segments(audio,hop_length,frame_length,min_duration=20,sr=sr, energy_threshold=0.04)
 segment = segments[0]
 print(segments)
 print(len(segments))

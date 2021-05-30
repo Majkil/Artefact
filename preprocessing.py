@@ -5,8 +5,8 @@ from m_dictionary import *
 
 
 def split_into_segments(audio, hop_length, frame_length, sr, min_voiced_duration_ms=10, energy_threshold=0.05):
-    segments = Split(audio, hop_length, frame_length, sr,
-                     min_voiced_duration_ms, energy_threshold)
+    segments = split_segments(audio, hop_length, frame_length, sr,
+                              min_voiced_duration_ms, energy_threshold)
     return segments
 
 
@@ -43,9 +43,10 @@ def all_phones_to_array(transcription):
                     phone_array[-1] = phone_array[-1] + char
                 elif char == 'ʃ' and (phone_array[-1] == 't'):
                     phone_array[-1] = phone_array[-1] + char
-                elif char == 'ə' and (phone_array[-1] == 'e' or phone_array[-1] == 'ɪ' or phone_array[-1] == 'ʊ'):
+                elif char == 'ə' and (phone_array[-1] == 'e' or phone_array[-1] == 'ɪ' or phone_array[-1] == 'ʊ' or phone_array[-1] == 'ð'):
                     phone_array[-1] = phone_array[-1] + char
-
+                elif char == 'ɐ' and (phone_array[-1] == 'ð'): 
+                    phone_array[-1] = phone_array[-1] + char
                 else:
                     phone_array.append(char)
     return phone_array
