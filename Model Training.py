@@ -62,11 +62,11 @@ with open("known_clips.npy", 'rb') as f:
 # In[243]:
 # labels_all = []
 # for x in exact:
-#     cription = load_clip_transcription(x)trans
+#     transcription = load_clip_transcription(x)
 #     phonemes = all_phones_to_array(transcription)
 #     labels_all.extend(np.unique(phonemes))
 # unique_phones = np.unique(labels_all).tolist()
-# np.save('unique_phones.npy',unique_phones)
+# np.save('unique_phones.npy', unique_phones)
 with open("unique_phones.npy", 'rb') as f:
     unique_phones = np.load(f, allow_pickle=True)
     unique_phones = unique_phones.tolist()
@@ -80,34 +80,34 @@ phoneme_audio = []
 phoneme_audio_labels = []
 # %%
 # processing data using the fb pretrain asr model
-for f in clips[7247:9000]:
-    
+for f in clips[0:500]:
+
     bits, bit_labels = process_clip_with_fb(f)
     phoneme_audio.extend(bits)
     phoneme_audio_labels.extend(bit_labels)
     print("\nextracted : ", len(bits), " current total:", len(phoneme_audio))
     print("position: ", clips.index(f), "\n")
 # %%
-np.save("fb_raw_audio2.npy", phoneme_audio)
-np.save("fb_raw_audio_labels2.npy", phoneme_audio_labels)
+np.save("fin2_raw_audio.npy", phoneme_audio)
+np.save("fin2_raw_audio_labels.npy", phoneme_audio_labels)
 
 # %%
 
-with open("fb_raw_audio.npy", 'rb') as f:
+with open("fin_raw_audio.npy", 'rb') as f:
     phoneme_audio = np.load(f, allow_pickle=True).tolist()
-with open("fb_raw_audio_labels.npy", 'rb') as f:
+with open("fin_raw_audio_labels.npy", 'rb') as f:
     phoneme_audio_labels = np.load(f, allow_pickle=True).tolist()
 
-#%%
+# %%
 
-#Prepare raw audio to mfcc
-#this will be the sound clip corresponding to the label
-features_count = 24
-series_length = 165
+# Prepare raw audio to mfcc
+# this will be the sound clip corresponding to the label
+features_count = 20
+series_length = 60
 features = []
 labels = []
 skipped = []
-phone_to_mfcc =[]
+phone_to_mfcc = []
 
 for i in tqdm(range(len(phoneme_audio))):
     temp_audio = librosa.effects.preemphasis(phoneme_audio[i])
@@ -122,6 +122,11 @@ for i in tqdm(range(len(phoneme_audio))):
     except:
         print(phoneme_audio_labels[i], mfcc.shape, len(phoneme_audio[i])/sr)
 
+
+# %%
+for u in unique_phones:
+    print("phoneme", u, "\tcount:", labels.count(
+        unique_phones.index(u)), "\tlabel: ", unique_phones.index(u))
 # In[10]:
 
 output = np.array(np.concatenate(features, axis=0))
@@ -133,9 +138,8 @@ features[0].shape[2]
 output.shape
 
 
-
 # In[11]:
-#First split of data (not filtered)
+# First split of data (not filtered)
 # Split twice to get the validation set
 X_train, X_test, y_train, y_test = train_test_split(
     output, np.array(labels), test_size=0.10, random_state=123)
@@ -148,13 +152,11 @@ X_train.shape, X_test.shape, len(y_train), len(
 # %%
 input_shape = (features_count, series_length)
 model = tfk.Sequential()
-model.add(LSTM(128, input_shape=input_shape))
+model.add(LSTM(165, input_shape=input_shape))
 model.add(Dropout(0.2))
-model.add(Dense(128, activation='relu'))
+model.add(Dense(160, activation='relu'))
 model.add(Dropout(0.2))
-model.add(Dense(64, activation='relu'))
-model.add(Dropout(0.4))
-model.add(Dense(64, activation='relu'))
+model.add(Dense(80, activation='relu'))
 model.add(Dropout(0.4))
 model.add(Dense(64, activation='relu'))
 model.add(Dropout(0.4))
@@ -174,25 +176,27 @@ test_loss, test_acc = model.evaluate(X_test, y_test, verbose=2)
 test_loss, test_acc
 
 # %%
+sr =22000
+hop_length = int(sr/200)
 accurate_f = []
 accurate_labels = []
-accurate_raw =[]
+accurate_raw = []
 # %%
 # use model to filter data
 for i in tqdm(range(len(output))):
     p1 = model.predict([output[i:i+1]])
-    #first order prediction
-    
+    # first order prediction
+
     if np.argmax(p1) == labels[i]:
         accurate_f.append(output[i:i+1])
         accurate_labels.append(labels[i])
         accurate_raw.append(phone_to_mfcc[i])
-    #second order prediction
-    p1[0][np.argmax(p1)] =0
-    if np.argmax(np.delete(p1, np.argmax(p1))) == labels[i]:
-        accurate_f.append(output[i:i+1])
-        accurate_labels.append(labels[i])
-        accurate_raw.append(phone_to_mfcc[i])
+    # second order prediction
+    p1[0][np.argmax(p1)] = 0
+    # if np.argmax(np.delete(p1, np.argmax(p1))) == labels[i]:
+    #     accurate_f.append(output[i:i+1])
+    #     accurate_labels.append(labels[i])
+    #     accurate_raw.append(phone_to_mfcc[i])
     # #third order prediction
     # p1[0][np.argmax(p1)] =0
     # if np.argmax(np.delete(p1, np.argmax(p1))) == labels[i]:
@@ -200,9 +204,12 @@ for i in tqdm(range(len(output))):
     #     accurate_labels.append(labels[i])
     #     accurate_raw.append(phone_to_mfcc[i])
 
-
-#%%
-#Split filtered data
+# %%
+for u in unique_phones:
+    print("phoneme", u, "\tcount:", accurate_labels.count(
+        unique_phones.index(u)), "\tlabel: ", unique_phones.index(u))
+# %%
+# Split filtered data
 output_2 = np.array(np.concatenate(accurate_f, axis=0))
 X_train_2, X_test_2, y_train_2, y_test_2 = train_test_split(
     output_2, np.array(accurate_labels), test_size=0.10, random_state=123)
@@ -230,63 +237,60 @@ filtered_model.add(Dropout(0.4))
 filtered_model.add(Dense(len(unique_phones), activation='softmax'))
 
 filtered_model.compile(loss=tfk.losses.sparse_categorical_crossentropy, metrics=[
-              'accuracy'], optimizer=tfk.optimizers.Adam(learning_rate=1.7))
+    'accuracy'], optimizer=tfk.optimizers.Adam(learning_rate=1.7))
 filtered_model.summary()
 
 # %%
 # train model with filtered data
 history = filtered_model.fit(X_train_2, y_train_2, epochs=10, batch_size=150,
-                    validation_data=(X_val_2, y_val_2), shuffle=True, verbose=1)
+                             validation_data=(X_val_2, y_val_2), shuffle=True, verbose=1)
 test_loss, test_acc = filtered_model.evaluate(X_test_2, y_test_2, verbose=2)
 test_loss, test_acc
 
-#%%
+# %%
 model.save('model_fb_lstm_37_3rd_order')
 
 
-
-
-
-#%%
+# %%
 with open("checked.npy", 'rb') as f:
     checked = np.load(f, allow_pickle=True)
-    
+
 with open("checked_labels.npy", 'rb') as f:
     check_labels = np.load(f, allow_pickle=True)
-    
-#%%
-car = librosa.load('./car.wav',22000)
-car_split = Split3(car[0], hop_length,sr,min_duration=750)
+
+# %%
+can = librosa.load('./samples/can.mp3', 22000)
+can_split = Split3(can[0], hop_length, sr, min_duration=250)
 toTest = []
-for x in range(3):
-    temp_audio = librosa.effects.preemphasis(car[0][car_split[x][0]:car_split[x][1]])
+for x in range(len(can_split)):
+    temp_audio = librosa.effects.preemphasis(
+        can[0][can_split[x][0]:can_split[x][1]])
     mfcc_checked1 = librosa.feature.mfcc(
-            temp_audio, hop_length=hop_length, sr=sr, n_mfcc=features_count)
+        temp_audio, hop_length=hop_length, sr=sr, n_mfcc=features_count)
     mfcc_checked1
-    data_checked1 = np.array([padding(mfcc_checked1, features_count, series_length)])
+    data_checked1 = np.array(
+        [padding(mfcc_checked1, features_count, series_length)])
     toTest.append(data_checked1)
 toTest = np.concatenate(toTest)
-#%%
-pc1 = filtered_model.predict([toTest[0:3]])
-
-print(unique_phones[np.argmax(pc1)] , check_labels[70])
+# %%
+pc1 = model.predict([toTest[0:4]])
+for i in pc1:
+    print(unique_phones[accurate_labels[np.argmax(pc1)]])
+# %%
+print(unique_phones[np.argmax(pc1)])
 
 pc1[0][np.argmax(pc1[0])] = 0
-print(unique_phones[np.argmax(pc1)] , check_labels[70])
-pc1[0][np.argmax(pc1)] =0
-print(unique_phones[np.argmax(pc1)] , check_labels[70])
-print( np.argmax(pc1))
+print(unique_phones[np.argmax(pc1)])
+pc1[0][np.argmax(pc1)] = 0
+print(unique_phones[np.argmax(pc1)])
+print(np.argmax(pc1))
 
 
-
-#%%
+# %%
 
 for u in unique_phones:
-    print("phoneme",u ,"count:", accurate_labels.count( unique_phones.index(u )) , "label: ", unique_phones.index(u))
-
-
-
-
+    print("phoneme", u, "count:", accurate_labels.count(
+        unique_phones.index(u)), "label: ", unique_phones.index(u))
 
 
 # In[12]:
@@ -329,21 +333,17 @@ history = model.fit(X_train_r, y_train, epochs=7, batch_size=32,
 # X_test_r[1:2].shape
 
 
-
-#%%
-np.save("ai_Selected_mfcc.npy",output )
-np.save("ai_Selected_labels.npy",accurate_labels )
-
+# %%
+np.save("ai_Selected_mfcc.npy", output)
+np.save("ai_Selected_labels.npy", accurate_labels)
 
 
 # %%
 history = model.fit(X_train_2, y_train_2, epochs=10, batch_size=150,
                     validation_data=(X_val_2, y_val_2), shuffle=True, verbose=1)
 # %%
-test_loss, test_acc = model.evaluate(X_test_2, y_test_2, verbose=2)
+test_loss, test_acc = model.evaluate(X_test_r, y_test, verbose=2)
 test_loss, test_acc
-
-
 
 
 # In[14]:
@@ -420,7 +420,7 @@ with open("checkpoint_labels_position_2075.npy", 'rb') as f:
 
 
 # %%
-#deprecated 
+# deprecated
 for x in known_clips[5000:-1]:
     # x =exact[0]
     transcription = load_clip_transcription(x)
@@ -447,3 +447,88 @@ for x in known_clips[5000:-1]:
         except:
             print(phonemes[i], mfcc.shape)
     print("Current segments count: ", len(features))
+
+# %%
+###############################################################
+###############################################################
+###############################################################
+###############################################################
+###############################################################
+with open("checked.npy", 'rb') as f:
+    checked = np.load(f, allow_pickle=True).tolist()
+with open("checked_labels.npy", 'rb') as f:
+    checked_labels = np.load(f, allow_pickle=True).tolist()
+
+# %%
+
+# Prepare raw audio to mfcc
+# this will be the sound clip corresponding to the label
+features_count = 20
+series_length = 60
+sr =22000
+hop_length = int(sr/200)
+features_c = []
+labels_c = []
+skipped_c = []
+phone_to_mfcc_c = []
+unique_phones_c = np.unique(checked_labels).tolist()
+for i in tqdm(range(len(checked))):
+    temp_audio = librosa.effects.preemphasis(checked[i])
+    mfcc = librosa.feature.mfcc(
+        temp_audio, hop_length=hop_length, sr=sr, n_mfcc=features_count)
+    try:
+        data = np.array([padding(mfcc, features_count, series_length)])
+        labels_c.append(unique_phones_c.index(checked_labels[i]))
+        features_c.append(data)
+        # phone_to_mfcc_c.append(phoneme_audio[i])
+
+    except:
+        print(checked_labels[i], mfcc.shape, len(checked[i])/sr)
+# %%
+output_c = np.array(np.concatenate(features_c, axis=0))
+len(labels_c), len(
+    features_c), features_c[0].shape, features_c[1].shape, features_c[2].shape, features_c[2].shape
+# for x in range(len(features)):
+# print(features[x].shape , labels[x])
+features_c[0].shape[2]
+output_c.shape
+
+
+# In[11]:
+# First split of data (not filtered)
+# Split twice to get the validation set
+X_train_c, X_test_c, y_train_c, y_test_c = train_test_split(
+    output_c, np.array(labels_c), test_size=0.10, random_state=123)
+X_train_c, X_val_c, y_train_c, y_val_c = train_test_split(
+    X_train_c, y_train_c, test_size=0.25, random_state=123)
+# Print the shapes
+X_train_c.shape, X_test_c.shape, len(y_train_c), len(
+    y_test_c), X_val_c.shape,  len(y_val_c)
+
+# %%
+input_shape = (features_count, series_length)
+model_c = tfk.Sequential()
+model_c.add(LSTM(165, input_shape=input_shape))
+model_c.add(Dropout(0.2))
+model_c.add(Dense(160, activation='relu'))
+model_c.add(Dropout(0.2))
+model_c.add(Dense(80, activation='relu'))
+model_c.add(Dropout(0.4))
+model_c.add(Dense(64, activation='relu'))
+model_c.add(Dropout(0.4))
+model_c.add(Dense(55, activation='relu'))
+model_c.add(Dropout(0.4))
+model_c.add(Dense(len(unique_phones_c), activation='softmax'))
+# %%
+model_c.compile(loss=tfk.losses.sparse_categorical_crossentropy, metrics=[
+    'accuracy'], optimizer=tfk.optimizers.Adam(learning_rate=1.7))
+model_c.summary()
+
+# %%
+history_c = model_c.fit(X_train_c, y_train_c, epochs=10, batch_size=150,
+                        validation_data=(X_val_c, y_val_c), shuffle=True, verbose=1)
+# %%
+test_loss_c, test_acc_c = model_c.evaluate(X_test_c, y_test_c, verbose=2)
+test_loss_c, test_acc_c
+
+# %%

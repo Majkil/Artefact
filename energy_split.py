@@ -22,7 +22,7 @@ def split_segments(audio, hop_length, frame_length, sr, min_duration=10, energy_
     n = normalize(f)
 
     above_t = np.where(n >= energy_threshold)[0]
-    print(np.where(n <= energy_threshold)[0])
+   
     for x in range(len(above_t) - 1):
         # if next frame in next in sequence
         if above_t[x] + 1 == above_t[x + 1] and start == 0:
@@ -180,10 +180,10 @@ def Split4(segment, sr, expected_phoneme_count, min_duration=80):
     # get RMS energy and apply preemphasis filter
     hop_length = int(sr / 200)
     frame_length = int(hop_length * 2.5)
-    mins = [0]
+    mins = []
     sec_energy = librosa.feature.rms(np.abs(segment), hop_length=hop_length, frame_length=frame_length)[0]
     sec_energy = librosa.effects.preemphasis(sec_energy)
-    mins.extend(signal.argrelextrema(sec_energy, np.less)[0] * hop_length)
+    mins.extend(signal.argrelmin(sec_energy)[0] * hop_length)
 
     while len(mins) > expected_phoneme_count * 2.5:
         hop_length = int(hop_length * 1.05)
@@ -205,8 +205,9 @@ def Split4(segment, sr, expected_phoneme_count, min_duration=80):
 
     mins = np.array(mins)
     if not mins.any():
-        mins = np.append(mins, 0)
-        mins = np.append(mins, len(sec_energy))
+        return [()]
+        # mins = np.append(mins, 0)
+        # mins = np.append(mins, len(sec_energy))
     tups = []
     maxs = signal.argrelextrema(sec_energy, np.greater)[0]
     # if too short to have at least 2 subsections
