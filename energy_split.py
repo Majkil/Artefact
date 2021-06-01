@@ -15,27 +15,28 @@ def split_segments(audio, hop_length, frame_length, sr, min_duration=10, energy_
     # @param energy_threshold -- minimum energy to be considered non silent in percentage
 
     min_duration = (sr / 1000) * min_duration
-    f = librosa.feature.rms(np.abs(audio), hop_length=hop_length, frame_length=frame_length)[0]
+    f = librosa.feature.rms(
+        np.abs(audio), hop_length=hop_length, frame_length=frame_length)[0]
     start, end = 0, 0
     voiced = []
 
     n = normalize(f)
 
     above_t = np.where(n >= energy_threshold)[0]
-   
+
     for x in range(len(above_t) - 1):
         # if next frame in next in sequence
         if above_t[x] + 1 == above_t[x + 1] and start == 0:
             start = above_t[x]
         # check upto 3 frames away for sequence continuation
-        elif above_t[x + 1] > above_t[x] +2 and start != 0:
+        elif above_t[x + 1] > above_t[x] + 2 and start != 0:
             end = above_t[x]
             voiced.append([start, end])
             start, end = 0, 0
 
     trimmed = []
     for x in voiced:
-        if len(signal.argrelmin(audio[x[0]:x[1]])[0])>1:
+        if len(signal.argrelmin(audio[x[0]:x[1]])[0]) > 1:
             trimmed.append(x)
 
     if len(trimmed) == 0:
@@ -61,7 +62,7 @@ def Split2(audio, hop_length, frame_length, sr, min_duration=700):
     # take next value close to boundary value as closing value
     for c in range(len(d)):
         if d[c] < d[c - 1] and d[c] < d[c - 2] and d[c] < d[c + 1] and d[c] < d[c + 2] and boundaries[
-            -1] + min_duration <= c:
+                -1] + min_duration <= c:
             boundaries.append(c)
     x = []
     if len(d) - boundaries[-1] < min_duration:
@@ -181,30 +182,32 @@ def Split4(segment, sr, expected_phoneme_count, min_duration=80):
     hop_length = int(sr / 200)
     frame_length = int(hop_length * 2.5)
     mins = []
-    sec_energy = librosa.feature.rms(np.abs(segment), hop_length=hop_length, frame_length=frame_length)[0]
+    sec_energy = librosa.feature.rms(
+        np.abs(segment), hop_length=hop_length, frame_length=frame_length)[0]
     sec_energy = librosa.effects.preemphasis(sec_energy)
     mins.extend(signal.argrelmin(sec_energy)[0] * hop_length)
 
     while len(mins) > expected_phoneme_count * 2.5:
         hop_length = int(hop_length * 1.05)
         frame_length = int(hop_length * 2.5)
-        sec_energy = librosa.feature.rms(np.abs(segment), hop_length=hop_length, frame_length=frame_length)[0]
+        sec_energy = librosa.feature.rms(
+            np.abs(segment), hop_length=hop_length, frame_length=frame_length)[0]
         sec_energy = librosa.effects.preemphasis(sec_energy)
         mins = signal.argrelextrema(sec_energy, np.less)[0]
-        temp_mins = [0]
+        temp_mins = []
         means = []
         for x in range(0, len(mins) - 1):
             means.append(np.mean(segment[mins[x]:mins[x + 1]]))
             # print(np.mean(segment[mins[x]:mins[x+1]]))
         means = normalize(means)
         for x in range(0, len(means) - 1):
-            diff = means[x + 1] - means[x]
+            diff = math.sqrt((means[x + 1] - means[x]) ** 2)
             if diff >= 0.06:
                 temp_mins.append(mins[x])
         mins = temp_mins
 
     mins = np.array(mins)
-    if not mins.any():
+    if not mins.any() or len(mins)==1:
         return [()]
         # mins = np.append(mins, 0)
         # mins = np.append(mins, len(sec_energy))
@@ -280,10 +283,10 @@ def Split4(segment, sr, expected_phoneme_count, min_duration=80):
     return np.array(tups) * hop_length
 
 
-
 def split_segment_depricated(audio, hop_length, frame_length, sr, min_duration=10, energy_threshold=0.05):
     min_duration = (sr / 1000) * min_duration
-    f = librosa.feature.rms(audio, hop_length=hop_length, frame_length=frame_length)[0]
+    f = librosa.feature.rms(audio, hop_length=hop_length,
+                            frame_length=frame_length)[0]
     start, end = 0, 0
     voiced = []
 
@@ -308,4 +311,3 @@ def split_segment_depricated(audio, hop_length, frame_length, sr, min_duration=1
     if len(trimmed) == 0:
         trimmed = [[0, len(audio)]]
     return np.array(trimmed) * hop_length
-
