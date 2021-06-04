@@ -52,8 +52,9 @@ def all_phones_to_array(transcription):
                     phone_array.append(char)
     return phone_array
 
-
+#Depricated
 def all_phoneme_Sections_in_clip(audio, segments, sr, frame_length, hop_length, min_duration=700):
+#Depricated
     all_bits = []
     for segment in segments:
         starting = segment[0]
@@ -66,8 +67,9 @@ def all_phoneme_Sections_in_clip(audio, segments, sr, frame_length, hop_length, 
             all_bits.append(b)
     return all_bits
 
-
+#Depricated
 def all_phoneme_Sections_in_clip2(audio, segments, hop_length, sr, min_duration):
+#Depricated
     all_bits = []
     for segment in segments:
         starting = segment[0]
@@ -224,8 +226,9 @@ def process_clip_with_fb(clip_address):
 
     return return_bits, return_labels
 
-
+#Depricated
 def process_clip_deprecated(audio_path, expected_phonemes):
+#Depricated
     sr = 12000
     hl = int(sr / 100)
     fl = hl * 2

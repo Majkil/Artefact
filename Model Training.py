@@ -27,7 +27,7 @@ single_word = "./samples/but bowl.wav"
 # In[3]:
 clips = fcs.get_audio_files(libri_train)
 print(len(clips))
-sr = 22000
+sr = 8000
 hop_length = int(sr/200)
 frame_length = int(hop_length*2.5)
 min_duration = hop_length*10
@@ -82,7 +82,7 @@ phoneme_audio_labels = []
 # %%
 # processing data using the fb pretrain asr model
 #0-500 , 5000-6000
-for f in clips[5500:6000]:
+for f in clips[6000:7000]:
 
     bits, bit_labels = process_clip_with_fb(f)
     if len(bits)== len(bit_labels):
@@ -553,15 +553,16 @@ test_loss_c, test_acc_c = model_c.evaluate(X_test_c, y_test_c, verbose=2)
 test_loss_c, test_acc_c
 
 # %%
-can_clip,sr= librosa.load('./samples/can.mp3',22000)
-bits = Split4(can_clip,sr = sr ,expected_phoneme_count=3)
+can_clip,sr= librosa.load('./samples/eye.wav',8000)
+bits = Split4(can_clip,sr = sr ,expected_phoneme_count=1)
 bits
 data  =[]
+sr = 8000
 features_count = 18
 series_length = 90
 features_test = []
 
-for i in range(0,3):
+for i in range(0,len(bits)):
     temp_audio = librosa.effects.preemphasis(can_clip[bits[i][0]:bits[i][1]])
     mfcc = librosa.feature.mfcc(
         temp_audio, hop_length=hop_length, sr=sr, n_mfcc=features_count)

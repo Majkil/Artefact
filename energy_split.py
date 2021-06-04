@@ -176,7 +176,8 @@ def Split3(audio, hop_length, sr, min_duration=300):
 
     return np.array(tups) * hop_length
 
-
+#todo Create a split that does not include expected phoneme count or minimum duration
+#todo rename all functions to be more readable
 def Split4(segment, sr, expected_phoneme_count, min_duration=80):
     # get RMS energy and apply preemphasis filter
     hop_length = int(sr / 200)
@@ -186,7 +187,7 @@ def Split4(segment, sr, expected_phoneme_count, min_duration=80):
         np.abs(segment), hop_length=hop_length, frame_length=frame_length)[0]
     sec_energy = librosa.effects.preemphasis(sec_energy)
     mins.extend(signal.argrelmin(sec_energy)[0] * hop_length)
-
+    
     while len(mins) > expected_phoneme_count * 2.5:
         hop_length = int(hop_length * 1.05)
         frame_length = int(hop_length * 2.5)
@@ -221,25 +222,7 @@ def Split4(segment, sr, expected_phoneme_count, min_duration=80):
         tups.append((0, maxs[0]))
         tups.append((maxs[0], math.ceil(len(segment) / hop_length)))
         return np.array(tups) * hop_length
-    # mins = [*mins,*maxs]
-    mins.tolist().append(math.ceil(len(segment) / hop_length))
-    mins.sort()
-
-    # not enough usable peaks or valleys detected
-    if len(mins) <= 1:
-        if len(maxs) == 2:
-            tups.append((maxs[0], maxs[1]))
-        elif mins[0] < 1 and (mins[0] * hop_length) / sr < min_duration / 1000:
-            tups.append((0, mins[0]))
-        elif mins[0] < 1 and ((mins[0] * hop_length) - len(segment)) / sr < min_duration / 1000:
-            tups.append((mins[0], len(segment)))
-        elif len(maxs) == 1 and maxs[0] != 0 and (maxs[0] * hop_length) / sr < min_duration / 1000:
-            tups.append((0, maxs[0]))
-        elif len(maxs) > 2:
-            mins = maxs
-        else:
-            return [()]
-    # create tuples for subsections
+       # create tuples for subsections
     for i in range(len(mins) - 1):
         # distance between next two valleys less than min_duration
         if (mins[i + 1] - mins[i]) * hop_length / sr < min_duration / 1000:
