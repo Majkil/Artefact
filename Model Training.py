@@ -13,7 +13,6 @@ from sklearn.model_selection import train_test_split
 from utilities import *
 from preprocessing import *
 
-
 lvpath = "E:\Datasets\Voice\Librivox\dev\LibriSpeech\dev-clean"
 libri_train = "E:\Datasets\Voice\LibriSpeech"
 mcvpath = "E:\Datasets\Voice\Mozilla Common Voice\en\cv-corpus-6.1-2020-12-11\en"
@@ -27,7 +26,7 @@ single_word = "./samples/but bowl.wav"
 # In[3]:
 clips = fcs.get_audio_files(libri_train)
 print(len(clips))
-sr = 8000
+sr = 22000
 hop_length = int(sr/200)
 frame_length = int(hop_length*2.5)
 min_duration = hop_length*10
@@ -52,7 +51,7 @@ def padding(array, xx, yy):
     bb = yy - b - w
     return np.pad(array, pad_width=((a, aa), (b, bb)), mode='constant')
 
-
+##region
 # In[7]:
 with open("exact.npy", 'rb') as f:
     exact = np.load(f, allow_pickle=True)
@@ -541,7 +540,7 @@ model_c.add(Dense(55, activation='relu'))
 model_c.add(Dropout(0.4))
 model_c.add(Dense(len(unique_phones_c), activation='softmax'))
 # %%
-model_c.compile(loss=tfk.losses.sparse_categorical_crossentropy, metrics=[
+model_c.compile(loss=tfk.losses.sparse_categorical_crossentropy(y_true=False), metrics=[
     'accuracy'], optimizer=tfk.optimizers.Adam(learning_rate=1.7))
 model_c.summary()
 
@@ -587,4 +586,3 @@ for p in predictions:
     pl[s3]=0
     s4= np.argmax(pl)
     print(t, s1,s2,s3,s4, unique_phones[t],unique_phones[s1],unique_phones[s2],unique_phones[s3],unique_phones[s4])
-# %%

@@ -265,6 +265,55 @@ def Split4(segment, sr, expected_phoneme_count, min_duration=80):
 
     return np.array(tups) * hop_length
 
+def phonme_boundaries(segment,sr):
+    hop_length = int(sr / 200)
+    min_duration = hop_length * 10
+    frame_length = int(hop_length * 2.5)
+    mins = []
+    premph_seg = librosa.effects.preemphasis(segment)
+    sec_energy = librosa.feature.rms(
+        np.abs(premph_seg), hop_length=hop_length, frame_length=frame_length)[0]
+
+    mins.extend(signal.argrelmin(sec_energy)[0] * hop_length)
+    if len(mins)<2:
+        return [0, len(segment)]
+    # if len(mins) <2:
+    # return [()]
+    temp_mins = [mins[0]]
+    means = []
+    for x in range(0, len(mins) - 1):
+        means.append(np.mean(segment[mins[x]:mins[x + 1]]))
+        # print(np.mean(segment[mins[x]:mins[x+1]]))
+    means = normalize(means)
+    for x in range(1, len(means)):
+        diff = np.abs(means[x] - means[x - 1])
+        if diff >= 0.1:
+            temp_mins.append(mins[x])
+    if temp_mins[-1]!= mins[-1] and mins[-1]-temp_mins[-1]>min_duration:
+        temp_mins.append(mins[-1])
+    mins = temp_mins
+    temp_mins = [mins[0]]
+    for m in range(len(mins) - 1):
+        if mins[m + 1] - temp_mins[-1] >= min_duration:
+            temp_mins.append(mins[m + 1])
+    mins = temp_mins
+    if mins[0]<min_duration:
+        mins[0]=0
+    else:
+        mins.insert(0,0)
+    if mins[-1]<len(segment)-min_duration:
+        mins[-1]=len(segment)
+    else:
+        mins.append(len(segment))
+    return mins
+
+def boundaries_to_segments(boundaries):
+    tuples = []
+    if len(boundaries) >=2:
+        for b in range(len(boundaries)-1) :
+            tuples.append((boundaries[b],boundaries[b+1]))
+    return tuples
+
 
 def split_segment_depricated(audio, hop_length, frame_length, sr, min_duration=10, energy_threshold=0.05):
     min_duration = (sr / 1000) * min_duration

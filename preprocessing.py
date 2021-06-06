@@ -52,6 +52,28 @@ def all_phones_to_array(transcription):
                     phone_array.append(char)
     return phone_array
 
+def auto_process(clip_address):
+    transcript = load_clip_transcription(clip_address)
+    phonemes = all_phones_to_array(transcript)
+
+    sr = 22000
+    hl = int(sr / 200)
+    fl = int(hl * 2)
+    audio, sr = librosa.load(clip_address, sr)
+    segments = split_segments(audio, hl, fl, sr)
+    #print("segmented words:", len(segments))
+    all_bits = []
+    for seg in segments:
+        s, e = seg[0], seg[1]
+        seg_audio = audio[s:e]
+        boundaries = phonme_boundaries(seg_audio, sr)
+        bits = boundaries_to_segments(boundaries)
+        for b in range(len(bits)):
+            all_bits.append(audio[s + bits[b][0]:s + bits[b][1]])
+    #print(transcript, "\n || word count: ", len(transcript.split(" ")), "|| phoneme count:", len(phonemes))
+    #print("\n ||segmented words:", len(segments), " || detected phonemes:", len(all_bits))
+    return len(transcript.split(" ")), len(segments), len(phonemes), len(all_bits) , all_bits
+
 #Depricated
 def all_phoneme_Sections_in_clip(audio, segments, sr, frame_length, hop_length, min_duration=700):
 #Depricated
