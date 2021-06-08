@@ -7,7 +7,8 @@ import IPython.display as ipd
 import matplotlib.pyplot as plt
 from sklearn.mixture import GaussianMixture
 import fastaudio.core.signal as fcs
-import GetTranscription
+from utilities import *
+from preprocessing import *
 import torch
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Tokenizer
 from pydub import AudioSegment
@@ -15,18 +16,14 @@ from pydub import AudioSegment
 import os
 
 lvpath ="E:\Datasets\Voice\Librivox\dev\LibriSpeech\dev-clean"
-mcvpath ="E:\Datasets\Voice\Mozilla Common Voice\en\cv-corpus-6.1-2020-12-11\en\clips"
-clips =fcs.get_audio_files(mcvpath)
+
+clips =fcs.get_audio_files(lvpath)
 
 clip= clips[380]
 transcription = load_clip_transcription(clip)
 
-try:
-    audio,sr = librosa.load(clip)   
-except:
-    AudioSegment.ffmpeg = r"C:\\Users\\nerdi\\python\\samples\\ffmpeg\\bin"
-    print(str(clip))
-    audio =AudioSegment.from_mp3("after.mp3")
+
+audio,sr = librosa.load(clip)   
 
 
 

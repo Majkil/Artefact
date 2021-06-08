@@ -3,9 +3,20 @@
 *.mp3
 *.txt
 *.zip
+*.png
+
 ffmpeg/*
 __pycache__/*
 samples/*
 .ipynb_checkpoints/*
 *.joblib
 *.npy
+169 segments no minimum length.pdf
+14_trained_with_means/keras_metadata.pb
+14_trained_with_means/saved_model.pb
+14_trained_with_means/variables/variables.data-00000-of-00001
+14_trained_with_means/variables/variables.index
+14_trained_with_means2/keras_metadata.pb
+14_trained_with_means2/saved_model.pb
+14_trained_with_means2/variables/variables.data-00000-of-00001
+14_trained_with_means2/variables/variables.index
